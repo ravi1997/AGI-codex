@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -79,6 +79,11 @@ class LearningConfig(BaseModel):
     )
     dataset_flush_batch: int = Field(5, ge=1)
     min_samples_for_optimization: int = Field(10, ge=1)
+    min_samples_for_training: int = Field(
+        50,
+        ge=1,
+        description="Number of collected experiences required before fine-tuning is triggered.",
+    )
     success_rate_floor: float = Field(0.6, ge=0.0, le=1.0)
     success_rate_ceiling: float = Field(0.9, ge=0.0, le=1.0)
     optimizer_cooldown: int = Field(5, ge=0)
@@ -86,6 +91,54 @@ class LearningConfig(BaseModel):
     max_autonomous_interval_sec: int = Field(3600, ge=1)
     telemetry_cpu_threshold: float = Field(85.0, ge=0.0)
     telemetry_memory_threshold_mb: float = Field(1024.0, ge=0.0)
+    training_strategy: Literal["lora", "dpo"] = Field(
+        "lora", description="Fine-tuning approach to execute when training is triggered."
+    )
+    training_base_model: str = Field(
+        "gpt2",
+        description="Base model identifier used as the starting point for fine-tuning.",
+    )
+    training_output_dir: Path = Field(
+        Path("storage/learning/models"),
+        description="Root directory where fine-tuned adapters are stored.",
+    )
+    training_metadata_path: Path = Field(
+        Path("storage/learning/models/latest.json"),
+        description="Location for the latest fine-tuning metadata blob.",
+    )
+    training_overrides_path: Path = Field(
+        Path("config/overrides.yaml"),
+        description="Configuration overrides file updated after successful training runs.",
+    )
+    training_epochs: int = Field(
+        1,
+        ge=1,
+        description="Number of epochs to run during fine-tuning when using PEFT adapters.",
+    )
+    max_train_steps: int = Field(
+        1000,
+        ge=1,
+        description="Maximum number of optimizer steps to perform during fine-tuning.",
+    )
+    learning_rate: float = Field(
+        5e-5,
+        gt=0.0,
+        description="Learning rate supplied to the Hugging Face trainer components.",
+    )
+    lora_rank: int = Field(
+        8,
+        ge=1,
+        description="Rank parameter for PEFT LoRA adapters.",
+    )
+    dpo_beta: float = Field(
+        0.1,
+        gt=0.0,
+        description="Beta parameter forwarded to the TRL DPO trainer when applicable.",
+    )
+    active_adapter_path: Optional[Path] = Field(
+        None,
+        description="Path to the most recently produced adapter artifact ready for loading.",
+    )
 
 
 class AgentConfig(BaseModel):
@@ -122,4 +175,26 @@ def load_config(path: Optional[os.PathLike[str]] = None) -> AgentConfig:
     with config_path.open("r", encoding="utf-8") as handle:
         data: Dict[str, Any] = yaml.safe_load(handle) or {}
 
+    overrides_path = project_root / "config" / "overrides.yaml"
+    if overrides_path.exists():
+        with overrides_path.open("r", encoding="utf-8") as handle:
+            overrides: Dict[str, Any] = yaml.safe_load(handle) or {}
+        data = _deep_update(data, overrides)
+
     return AgentConfig(**data)
+
+
+def _deep_update(base: Dict[str, Any], updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively merge update mapping into base mapping."""
+
+    merged = dict(base)
+    for key, value in updates.items():
+        if (
+            key in merged
+            and isinstance(merged[key], dict)
+            and isinstance(value, dict)
+        ):
+            merged[key] = _deep_update(merged[key], value)
+        else:
+            merged[key] = value
+    return merged

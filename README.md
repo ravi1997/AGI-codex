@@ -60,6 +60,9 @@ Key sections include:
 ### Learning Outputs
 - Feedback analytics persist to `storage/analytics/feedback.json` and track success rates over time.
 - Fine-tuning datasets accumulate in `storage/learning/dataset.jsonl` (JSONL format) to bootstrap LoRA/DPO pipelines.
+- Once `min_samples_for_training` is met the optimizer schedules a task with the
+  recommended `agi-core-train` command for LoRA/DPO fine-tuning. Detailed
+  operator workflows are documented in [`docs/fine_tuning.md`](docs/fine_tuning.md).
 
 ## Project Structure
 - `src/agi_core/`: Python package containing orchestration, reasoning, memory, tools, and system modules.
