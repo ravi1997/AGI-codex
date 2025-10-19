@@ -1,0 +1,14 @@
+memory:
+  vector_backend: "chromadb"
+  episodic_db_path: "storage/episodic/memory.json"
+  semantic_db_path: "storage/semantic/knowledge.json"
+  procedural_repo_path: "storage/procedural"
+tools:
+  sandbox_root: "sandbox"
+  allow_network: false
+scheduler:
+  max_concurrent_tasks: 1
+  autonomous_task_interval_sec: 1800
+logging:
+  level: "INFO"
+  log_dir: "logs"
