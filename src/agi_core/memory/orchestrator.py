@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Iterable, List, Sequence
+from typing import Dict, List, Sequence
 
 from ..config import MemoryConfig
 from .base import MemoryRecord
@@ -87,15 +87,23 @@ class MemoryOrchestrator:
         LOGGER.debug("Added semantic memory: %s", metadata)
 
     def retrieve_relevant(self, query_embedding: Sequence[float], limit: int = 5) -> List[MemoryRecord]:
-        episodic = self.episodic.query(query_embedding, limit=limit)
-        semantic = self.semantic.query(query_embedding, limit=limit)
-        combined = episodic + semantic
-        # Deduplicate by content while preserving order
+        scored_records = []
+        for record in self.episodic.all_records():
+            scored_records.append((record.similarity(query_embedding), record))
+        for record in self.semantic.all_records():
+            scored_records.append((record.similarity(query_embedding), record))
+
+        scored_records.sort(key=lambda item: item[0], reverse=True)
+
         seen = set()
         unique: List[MemoryRecord] = []
-        for record in combined:
-            if record.content not in seen:
-                seen.add(record.content)
-                unique.append(record)
+        for _, record in scored_records:
+            if record.content in seen:
+                continue
+            seen.add(record.content)
+            unique.append(record)
+            if len(unique) >= limit:
+                break
+
         LOGGER.debug("Retrieved %d relevant memories", len(unique))
-        return unique[:limit]
+        return unique

@@ -17,7 +17,9 @@ from ..reasoning.verifier import Verifier
 from ..system.safety import SafetyGuard
 from ..system.telemetry import TelemetryCollector
 from ..tools.base import ToolRegistry, ToolResult
+from ..tools.browser import BrowserAutomationTool
 from ..tools.file_io import FileIOTool
+from ..tools.rest_client import RestClientTool
 from ..tools.system_monitor import SystemMonitorTool
 from ..tools.terminal import TerminalTool
 from .dialogue_manager import DialogueManager
@@ -52,9 +54,42 @@ class AgentKernel:
 
         self.tools = ToolRegistry()
         sandbox = config.tools.sandbox_root
-        self.tools.register(TerminalTool(sandbox_root=sandbox))
+        allow_network = config.tools.allow_network
+        network_allowlist = config.tools.network_allowlist
+        self.tools.register(
+            TerminalTool(
+                sandbox_root=sandbox,
+                allow_network=allow_network,
+                network_allowlist=network_allowlist,
+            )
+        )
         self.tools.register(FileIOTool(sandbox_root=sandbox))
         self.tools.register(SystemMonitorTool(self.telemetry))
+
+        browser_cfg = config.tools.browser
+        if browser_cfg.enabled:
+            self.tools.register(
+                BrowserAutomationTool(
+                    sandbox_root=sandbox,
+                    allow_network=config.tools.allow_network,
+                    allowed_origins=browser_cfg.allowed_origins,
+                    headless=browser_cfg.headless,
+                    default_timeout_ms=browser_cfg.default_timeout_ms,
+                )
+            )
+
+        rest_cfg = config.tools.rest
+        if rest_cfg.enabled:
+            self.tools.register(
+                RestClientTool(
+                    allow_network=config.tools.allow_network,
+                    allowed_hosts=rest_cfg.allowed_hosts,
+                    default_headers=rest_cfg.default_headers,
+                    auth_token=rest_cfg.auth_token,
+                    default_timeout=rest_cfg.default_timeout_sec,
+                    sandbox_root=sandbox,
+                )
+            )
 
         self.executor = Executor(self.tools, working_directory=str(sandbox))
         self.verifier = Verifier()

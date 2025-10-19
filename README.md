@@ -5,8 +5,8 @@ AGI Codex is a modular autonomous agent scaffold designed to operate as a backgr
 ## Features
 - Multi-agent architecture with planner, executor, verifier, and safety guards
 - Context builder that retrieves relevant memories and deterministic embeddings for planning
-- Persistent episodic, semantic, and procedural memory stores with automatic outcome logging and optional vector backends
-- Tool plugin framework with sandboxed terminal, file I/O, and telemetry monitor tools
+- Persistent episodic, semantic, and procedural memory stores with automatic outcome logging
+- Tool plugin framework with sandboxed terminal, file I/O, telemetry monitor, optional Playwright browser automation, and REST client tools
 - Telemetry collection and autonomous task proposals with failure remediation loops
 - Feedback analytics that track success metrics and adjust autonomous scheduling heuristics
 - Learning pipeline that writes JSONL experience datasets for downstream LoRA/DPO fine-tuning
@@ -64,8 +64,8 @@ Default configuration resides in `config/default.yaml`. Override by passing `--c
 
 Key sections include:
 
-- `memory`: File locations for episodic, semantic, and procedural stores as well as vector backend selection.
-- `tools`: Sandbox permissions for terminal and file I/O tooling.
+- `memory`: File locations for episodic, semantic, and procedural stores.
+- `tools`: Sandbox permissions and network policies for terminal, browser automation, REST client, and file tooling.
 - `scheduler`: Task concurrency, autonomous cadence, and idle sleep duration.
 - `logging`: Log level and directory paths.
 - `learning`: Feedback history size, dataset export path, and optimization thresholds.
@@ -73,13 +73,16 @@ Key sections include:
 ### Learning Outputs
 - Feedback analytics persist to `storage/analytics/feedback.json` and track success rates over time.
 - Fine-tuning datasets accumulate in `storage/learning/dataset.jsonl` (JSONL format) to bootstrap LoRA/DPO pipelines.
+- Once `min_samples_for_training` is met the optimizer schedules a task with the
+  recommended `agi-core-train` command for LoRA/DPO fine-tuning. Detailed
+  operator workflows are documented in [`docs/fine_tuning.md`](docs/fine_tuning.md).
 
 ## Project Structure
 - `src/agi_core/`: Python package containing orchestration, reasoning, memory, tools, and system modules.
 - `config/`: YAML configuration files.
 - `systemd/`: Systemd unit templates.
 - `webui/`: Static assets for placeholder web dashboard.
-- `docs/`: Documentation, including architecture overview.
+- `docs/`: Documentation, including architecture overview and tooling guides.
 
 ## Roadmap
 Phase 1 delivered the scaffolding and baseline autonomy. Phase 2 adds contextual planning, telemetry-driven tooling, automatic memory capture, and follow-up task generation for failed runs. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.
