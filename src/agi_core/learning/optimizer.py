@@ -4,9 +4,12 @@ from __future__ import annotations
 import logging
 from typing import Dict, Set
 
+from pathlib import Path
+
 from ..config import LearningConfig
 from ..orchestration.task_scheduler import TaskScheduler
 from .feedback import FeedbackCollector
+from .dataset import count_non_empty_lines
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,6 +21,7 @@ class SelfOptimizer:
         self._config = config
         self._cooldown_remaining = 0
         self._active_alerts: Set[str] = set()
+        self._last_training_sample_count = 0
 
     def maybe_optimize(
         self,
@@ -43,6 +47,7 @@ class SelfOptimizer:
             self._tune_scheduler(scheduler, metrics.success_rate)
 
         self._process_telemetry_alerts(scheduler, telemetry)
+        self._maybe_enqueue_training(scheduler)
 
     def _tune_scheduler(self, scheduler: TaskScheduler, success_rate: float) -> None:
         current_interval = scheduler.autonomous_interval
@@ -112,3 +117,37 @@ class SelfOptimizer:
         )
         self._active_alerts.add(reason)
         LOGGER.warning("Queued optimizer task for reason '%s'", reason)
+
+    def _maybe_enqueue_training(self, scheduler: TaskScheduler) -> None:
+        dataset_path: Path = self._config.dataset_path
+        sample_count = count_non_empty_lines(dataset_path)
+        if sample_count < self._config.min_samples_for_training:
+            self._last_training_sample_count = sample_count
+            return
+
+        if sample_count == self._last_training_sample_count:
+            return
+
+        command = [
+            "agi-core-train",
+            f"--strategy={self._config.training_strategy}",
+            f"--dataset={dataset_path}",
+        ]
+        description = "Run fine-tuning pipeline on accumulated experience dataset"
+        scheduler.add_task(
+            description,
+            priority=4,
+            metadata={
+                "source": "optimizer",
+                "action": "fine_tune",
+                "command": " ".join(command),
+                "samples": str(sample_count),
+            },
+            autonomous=True,
+        )
+        LOGGER.info(
+            "Queued fine-tuning job request with %d samples using %s strategy",
+            sample_count,
+            self._config.training_strategy,
+        )
+        self._last_training_sample_count = sample_count

@@ -19,6 +19,7 @@ learning:
   dataset_path: "storage/learning/dataset.jsonl"
   dataset_flush_batch: 5
   min_samples_for_optimization: 10
+  min_samples_for_training: 50
   success_rate_floor: 0.6
   success_rate_ceiling: 0.9
   optimizer_cooldown: 5
@@ -26,6 +27,16 @@ learning:
   max_autonomous_interval_sec: 3600
   telemetry_cpu_threshold: 85.0
   telemetry_memory_threshold_mb: 1024.0
+  training_strategy: "lora"
+  training_base_model: "gpt2"
+  training_output_dir: "storage/learning/models"
+  training_metadata_path: "storage/learning/models/latest.json"
+  training_overrides_path: "config/overrides.yaml"
+  training_epochs: 1
+  max_train_steps: 1000
+  learning_rate: 5.0e-05
+  lora_rank: 8
+  dpo_beta: 0.1
 logging:
   level: "INFO"
   log_dir: "logs"
