@@ -70,3 +70,4 @@ Key sections include:
 
 ## Roadmap
 Phase 1 delivered the scaffolding and baseline autonomy. Phase 2 adds contextual planning, telemetry-driven tooling, automatic memory capture, and follow-up task generation for failed runs. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.
+Phase 1 delivers scaffolding and baseline autonomy. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.

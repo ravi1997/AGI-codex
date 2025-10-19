@@ -34,6 +34,9 @@
    - *Feedback Collector*: Aggregates user ratings, implicit feedback, success metrics (implemented via `FeedbackCollector`).
    - *Policy Updater*: Adjusts prompts, planner heuristics, and tool configuration based on feedback (powered by `SelfOptimizer`).
    - *Fine-tuning Pipeline*: LoRA/DPO training scripts for incremental model refinement (seeded by the JSONL exporter in `LearningPipeline`).
+   - *Feedback Collector*: Aggregates user ratings, implicit feedback, success metrics.
+   - *Policy Updater*: Adjusts prompts, planner heuristics, and tool configuration based on feedback.
+   - *Fine-tuning Pipeline*: LoRA/DPO training scripts for incremental model refinement (offline batch).
    - *Skill Discovery Module*: Detects repetitive tasks and proposes automation scripts.
 6. **Infrastructure & Deployment**
    - *Service Manager*: systemd units and health checks ensuring uptime.

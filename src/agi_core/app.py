@@ -32,6 +32,10 @@ def main() -> None:
             agent.run_forever()
     finally:
         agent.shutdown()
+    if args.once:
+        agent.run_once()
+    else:
+        agent.run_forever()
 
 
 if __name__ == "__main__":

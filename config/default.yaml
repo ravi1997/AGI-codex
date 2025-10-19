@@ -26,3 +26,6 @@ learning:
   max_autonomous_interval_sec: 3600
   telemetry_cpu_threshold: 85.0
   telemetry_memory_threshold_mb: 1024.0
+logging:
+  level: "INFO"
+  log_dir: "logs"
