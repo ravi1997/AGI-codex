@@ -5,7 +5,7 @@ import logging
 from typing import List
 
 from ..tools.base import ToolResult
-from .planner import Plan
+from .planner import Plan, PlanStep
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,10 +18,20 @@ class Verifier:
             LOGGER.warning("No results to verify for plan: %s", plan.goal)
             return False
 
+        success = True
         for step, result in zip(plan.steps, results):
             if not result.success:
-                LOGGER.warning("Step failed: %s | Error: %s", step.description, result.error)
-                return False
+                self._log_failure(step, result)
+                success = False
 
-        LOGGER.info("Plan '%s' completed successfully", plan.goal)
-        return True
+        if success:
+            LOGGER.info("Plan '%s' completed successfully", plan.goal)
+        return success
+
+    def _log_failure(self, step: PlanStep, result: ToolResult) -> None:
+        LOGGER.warning(
+            "Step '%s' failed | Description: %s | Error: %s",
+            step.name,
+            step.description,
+            result.error or "<no error reported>",
+        )

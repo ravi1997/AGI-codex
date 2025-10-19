@@ -31,6 +31,9 @@
    - *API Tooling*: Generic REST/GraphQL client with credential vault integration.
    - *System Monitor Tool*: Collects CPU, memory, process metrics for self-optimization.
 5. **Learning & Adaptation Layer**
+   - *Feedback Collector*: Aggregates user ratings, implicit feedback, success metrics (implemented via `FeedbackCollector`).
+   - *Policy Updater*: Adjusts prompts, planner heuristics, and tool configuration based on feedback (powered by `SelfOptimizer`).
+   - *Fine-tuning Pipeline*: LoRA/DPO training scripts for incremental model refinement (seeded by the JSONL exporter in `LearningPipeline`).
    - *Feedback Collector*: Aggregates user ratings, implicit feedback, success metrics.
    - *Policy Updater*: Adjusts prompts, planner heuristics, and tool configuration based on feedback.
    - *Fine-tuning Pipeline*: LoRA/DPO training scripts for incremental model refinement (offline batch).
@@ -94,3 +97,12 @@
    - Developer onboarding guide, architecture overview, runbooks.
 
 Phase 1 focuses on scaffolding and minimal viable autonomy (task scheduling, basic reasoning loop). Subsequent phases will expand learning pipelines, advanced tool plugins, and self-optimization heuristics.
+
+## Phase 2 Delivery Highlights
+
+- **Context Builder**: Deterministic hashed embeddings and retrieval heuristics surface relevant episodic/semantic memories and tool affordances before planning.
+- **Telemetry-aware Planning**: New `system.monitor` tool integrates live metrics into the plan and enables proactive health assessments.
+- **Plan Serialization**: Planner persists a Markdown context snapshot via the file I/O tool for traceability and human inspection.
+- **Outcome Logging**: Task results are summarized and pushed into episodic and semantic memory stores for richer retrieval on future runs.
+- **Failure Remediation Loop**: Unsuccessful tasks automatically spawn follow-up diagnostics queued as autonomous work items.
+- **Feedback Analytics & Self-Optimization**: Runtime success metrics dynamically adjust autonomous task cadence, emit telemetry-driven health checks, and export JSONL datasets for fine-tuning.

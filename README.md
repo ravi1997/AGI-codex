@@ -1,12 +1,15 @@
 # AGI Codex
 
-AGI Codex is a modular autonomous agent scaffold designed to operate as a background service on Ubuntu systems. It combines orchestration, memory, tool usage, and learning subsystems to enable proactive assistance and continual improvement.
+AGI Codex is a modular autonomous agent scaffold designed to operate as a background service on Ubuntu systems. It combines orchestration, memory, tool usage, and learning subsystems to enable proactive assistance and continual improvement. The Phase 2 release deepens autonomy with contextual planning, telemetry-aware tooling, and richer memory capture loops.
 
 ## Features
 - Multi-agent architecture with planner, executor, verifier, and safety guards
-- Persistent episodic, semantic, and procedural memory stores
-- Tool plugin framework with sandboxed terminal and file I/O tools
-- Telemetry collection and autonomous task proposals
+- Context builder that retrieves relevant memories and deterministic embeddings for planning
+- Persistent episodic, semantic, and procedural memory stores with automatic outcome logging
+- Tool plugin framework with sandboxed terminal, file I/O, and telemetry monitor tools
+- Telemetry collection and autonomous task proposals with failure remediation loops
+- Feedback analytics that track success metrics and adjust autonomous scheduling heuristics
+- Learning pipeline that writes JSONL experience datasets for downstream LoRA/DPO fine-tuning
 - Deployment options via systemd or Docker Compose
 
 ## Getting Started
@@ -46,6 +49,18 @@ docker compose up --build
 ### Configuration
 Default configuration resides in `config/default.yaml`. Override by passing `--config` to `agi-core`.
 
+Key sections include:
+
+- `memory`: File locations for episodic, semantic, and procedural stores.
+- `tools`: Sandbox permissions for terminal and file I/O tooling.
+- `scheduler`: Task concurrency, autonomous cadence, and idle sleep duration.
+- `logging`: Log level and directory paths.
+- `learning`: Feedback history size, dataset export path, and optimization thresholds.
+
+### Learning Outputs
+- Feedback analytics persist to `storage/analytics/feedback.json` and track success rates over time.
+- Fine-tuning datasets accumulate in `storage/learning/dataset.jsonl` (JSONL format) to bootstrap LoRA/DPO pipelines.
+
 ## Project Structure
 - `src/agi_core/`: Python package containing orchestration, reasoning, memory, tools, and system modules.
 - `config/`: YAML configuration files.
@@ -54,4 +69,5 @@ Default configuration resides in `config/default.yaml`. Override by passing `--c
 - `docs/`: Documentation, including architecture overview.
 
 ## Roadmap
+Phase 1 delivered the scaffolding and baseline autonomy. Phase 2 adds contextual planning, telemetry-driven tooling, automatic memory capture, and follow-up task generation for failed runs. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.
 Phase 1 delivers scaffolding and baseline autonomy. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.

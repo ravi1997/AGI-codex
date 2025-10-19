@@ -5,7 +5,7 @@ import logging
 from typing import List
 
 from ..tools.base import ToolContext, ToolRegistry, ToolResult
-from .planner import Plan
+from .planner import Plan, PlanStep
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,14 +20,20 @@ class Executor:
     def execute(self, plan: Plan) -> List[ToolResult]:
         results: List[ToolResult] = []
         for step in plan.steps:
-            try:
-                tool = self._tools.get(step.tool)
-            except KeyError as exc:
-                LOGGER.error("Unknown tool: %s", step.tool)
-                results.append(ToolResult(success=False, output="", error=str(exc)))
-                continue
-
-            LOGGER.info("Executing step: %s", step.description)
-            result = tool.run(self._context, *step.arguments)
+            result = self._execute_step(step)
             results.append(result)
         return results
+
+    def _execute_step(self, step: PlanStep) -> ToolResult:
+        if step.tool is None:
+            LOGGER.info("Internal step '%s': %s", step.name, step.description)
+            return ToolResult(success=True, output=step.description)
+
+        try:
+            tool = self._tools.get(step.tool)
+        except KeyError as exc:
+            LOGGER.error("Unknown tool: %s", step.tool)
+            return ToolResult(success=False, output="", error=str(exc))
+
+        LOGGER.info("Executing step '%s' with tool %s", step.name, step.tool)
+        return tool.run(self._context, *step.args, **step.kwargs)
