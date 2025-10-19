@@ -52,7 +52,15 @@ class AgentKernel:
 
         self.tools = ToolRegistry()
         sandbox = config.tools.sandbox_root
-        self.tools.register(TerminalTool(sandbox_root=sandbox))
+        allow_network = config.tools.allow_network
+        network_allowlist = config.tools.network_allowlist
+        self.tools.register(
+            TerminalTool(
+                sandbox_root=sandbox,
+                allow_network=allow_network,
+                network_allowlist=network_allowlist,
+            )
+        )
         self.tools.register(FileIOTool(sandbox_root=sandbox))
         self.tools.register(SystemMonitorTool(self.telemetry))
 

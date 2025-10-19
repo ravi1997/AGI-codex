@@ -5,7 +5,8 @@ memory:
   procedural_repo_path: "storage/procedural"
 tools:
   sandbox_root: "sandbox"
-  allow_network: false
+  allow_network: false  # Disables execution of networking binaries such as curl and wget.
+  network_allowlist: []  # When allow_network is true, limit permitted networking binaries (empty means allow known binaries).
 scheduler:
   max_concurrent_tasks: 1
   autonomous_task_interval_sec: 1800
