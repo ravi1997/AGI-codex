@@ -25,6 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "agi-core=agi_core.app:main",
+            "agi-core-train=agi_core.learning.cli:main",
         ]
     },
     include_package_data=True,

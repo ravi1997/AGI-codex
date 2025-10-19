@@ -36,4 +36,10 @@ class Executor:
             return ToolResult(success=False, output="", error=str(exc))
 
         LOGGER.info("Executing step '%s' with tool %s", step.name, step.tool)
-        return tool.run(self._context, *step.args, **step.kwargs)
+        try:
+            return tool.run(self._context, *step.args, **step.kwargs)
+        except Exception as exc:  # noqa: BLE001 - broad exception to capture tool failures
+            LOGGER.exception(
+                "Tool '%s' failed while executing step '%s'", step.tool, step.name
+            )
+            return ToolResult(success=False, output="", error=str(exc))

@@ -18,10 +18,36 @@ class TerminalTool(Tool):
     name = "terminal.run"
     description = "Execute shell commands inside the configured sandbox directory."
 
-    def __init__(self, sandbox_root: Path, allowed_binaries: Sequence[str] | None = None) -> None:
+    NETWORK_COMMANDS = {
+        "curl",
+        "wget",
+        "ssh",
+        "scp",
+        "sftp",
+        "ftp",
+        "telnet",
+        "nc",
+        "netcat",
+        "ping",
+        "dig",
+        "nslookup",
+    }
+
+    def __init__(
+        self,
+        sandbox_root: Path,
+        *,
+        allow_network: bool = False,
+        network_allowlist: Sequence[str] | None = None,
+        allowed_binaries: Sequence[str] | None = None,
+    ) -> None:
         self._sandbox_root = sandbox_root.resolve()
         self._sandbox_root.mkdir(parents=True, exist_ok=True)
-        self._allowed_binaries = set(allowed_binaries or [])
+        self._allow_network = allow_network
+        self._network_allowlist = {
+            Path(binary).name for binary in (network_allowlist or [])
+        }
+        self._allowed_binaries = {Path(binary).name for binary in (allowed_binaries or [])}
 
     def run(self, context: ToolContext, *args: str, **kwargs: str) -> ToolResult:
         command = " ".join(args)
@@ -34,8 +60,29 @@ class TerminalTool(Tool):
             return ToolResult(success=False, output="", error="No command provided")
 
         parts = shlex.split(command)
-        if self._allowed_binaries and parts[0] not in self._allowed_binaries:
+        base_command = Path(parts[0]).name
+
+        if self._allowed_binaries and base_command not in self._allowed_binaries:
             return ToolResult(success=False, output="", error="Command not allowed")
+
+        if not self._allow_network and base_command in self.NETWORK_COMMANDS:
+            return ToolResult(
+                success=False,
+                output="",
+                error="Networking commands are disabled by configuration",
+            )
+
+        if (
+            self._allow_network
+            and self._network_allowlist
+            and base_command in self.NETWORK_COMMANDS
+            and base_command not in self._network_allowlist
+        ):
+            return ToolResult(
+                success=False,
+                output="",
+                error="Networking command not allowed by allowlist",
+            )
 
         try:
             process = subprocess.run(
