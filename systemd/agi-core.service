@@ -1,0 +1,13 @@
+[Unit]
+Description=AGI Core Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/agi-core
+ExecStart=%h/agi-core/.venv/bin/python -m agi_core.app
+Restart=on-failure
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
