@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -26,6 +26,44 @@ class MemoryConfig(BaseModel):
     )
 
 
+class BrowserToolConfig(BaseModel):
+    """Settings for the browser automation tool."""
+
+    enabled: bool = Field(False, description="Whether the Playwright-powered tool is available.")
+    headless: bool = Field(True, description="Launch browser instances in headless mode.")
+    default_timeout_ms: int = Field(
+        10_000,
+        ge=100,
+        description="Default timeout applied to Playwright navigation and actions.",
+    )
+    allowed_origins: List[str] = Field(
+        default_factory=list,
+        description="Allow-listed URL prefixes for network navigation when enabled.",
+    )
+
+
+class RestClientConfig(BaseModel):
+    """Settings for the REST client tool."""
+
+    enabled: bool = Field(False, description="Whether the REST client tool is available.")
+    default_timeout_sec: float = Field(
+        10.0,
+        gt=0.0,
+        description="Default timeout applied to outbound HTTP requests.",
+    )
+    allowed_hosts: List[str] = Field(
+        default_factory=lambda: ["127.0.0.1", "localhost"],
+        description="List of hostnames the REST client may contact.",
+    )
+    default_headers: Dict[str, str] = Field(
+        default_factory=dict, description="Headers added to every REST request."
+    )
+    auth_token: Optional[str] = Field(
+        None,
+        description="Optional Authorization header automatically attached when present.",
+    )
+
+
 class ToolConfig(BaseModel):
     """Configuration for tool execution."""
 
@@ -35,6 +73,8 @@ class ToolConfig(BaseModel):
     allow_network: bool = Field(
         False, description="Whether network-enabled tools are permitted by default."
     )
+    browser: BrowserToolConfig = BrowserToolConfig()
+    rest: RestClientConfig = RestClientConfig()
 
 
 class SchedulerConfig(BaseModel):

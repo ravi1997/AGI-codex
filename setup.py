@@ -19,6 +19,8 @@ setup(
         "pydantic>=1.10",
         "PyYAML>=6.0",
         "psutil>=5.9",
+        "requests>=2.31",
+        "playwright>=1.40",
     ],
     entry_points={
         "console_scripts": [
