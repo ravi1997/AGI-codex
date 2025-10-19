@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.eggs/
+build/
+dist/
+logs/
+storage/

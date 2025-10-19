@@ -1,0 +1,31 @@
+version: "3.9"
+services:
+  core:
+    build: .
+    container_name: agi-core
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["python", "-m", "agi_core.app"]
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - memory-db
+  memory-db:
+    image: ankane/pgvector
+    environment:
+      - POSTGRES_USER=agi
+      - POSTGRES_PASSWORD=agi
+      - POSTGRES_DB=agi_memory
+    ports:
+      - "5432:5432"
+  vector-db:
+    image: ghcr.io/chroma-core/chroma:latest
+    ports:
+      - "8000:8000"
+  web-ui:
+    image: nginx:alpine
+    volumes:
+      - ./webui:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
