@@ -33,8 +33,9 @@ agi-core --once
 
 ### Running as a Service
 1. Copy `systemd/agi-core.service` to `~/.config/systemd/user/` (or `/etc/systemd/system/`).
-2. Adjust `WorkingDirectory` and `ExecStart` paths as needed.
-3. Reload systemd and enable the service:
+2. Adjust `WorkingDirectory` and virtualenv paths as needed.
+3. Create `~/.config/systemd/user/agi-core/.env` (or equivalent) and set `AGI_CORE_CONFIG` to the YAML profile that matches your deployment, e.g. `AGI_CORE_CONFIG=%h/agi-core/config/docker.yaml` for Chroma or `config/docker.pgvector.yaml` for pgvector.
+4. Reload systemd and enable the service:
    ```bash
    systemctl --user daemon-reload
    systemctl --user enable agi-core
@@ -42,7 +43,19 @@ agi-core --once
    ```
 
 ### Docker Compose
+The Compose stack ships with two configuration profiles:
+
+- `config/docker.yaml` points the orchestrator at the bundled Chroma REST container.
+- `config/docker.pgvector.yaml` targets the bundled PostgreSQL + pgvector container.
+
+Select the desired backend by editing the mounted config file before booting the stack.
+
 ```bash
+# Chroma-backed deployment
+docker compose up --build
+
+# pgvector-backed deployment
+cp config/docker.pgvector.yaml config/docker.yaml
 docker compose up --build
 ```
 
@@ -74,3 +87,14 @@ Key sections include:
 ## Roadmap
 Phase 1 delivered the scaffolding and baseline autonomy. Phase 2 adds contextual planning, telemetry-driven tooling, automatic memory capture, and follow-up task generation for failed runs. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.
 Phase 1 delivers scaffolding and baseline autonomy. Future phases will expand the learning pipeline, integrate advanced tool plugins, and refine self-optimization loops.
+### Vector Memory Backends
+
+`memory.vector_backend` controls whether the orchestrator instantiates local JSON stores (`null`/omitted), Chroma (`chromadb`), or PostgreSQL with pgvector (`pgvector`). Additional keys specify the connection targets:
+
+- `memory.chroma_connection`: REST endpoint or filesystem path for the Chroma client (supports `http(s)://`, `file://`, or raw paths for embedded deployments).
+- `memory.pgvector_dsn`: PostgreSQL connection string including credentials and host.
+- `memory.vector_episodic_collection` / `memory.vector_semantic_collection`: Collection or namespace labels for each memory modality.
+
+When the selected backend cannot be reached or the Python dependency is missing, the orchestrator automatically falls back to the local JSON stores.
+
+Install optional vector dependencies with `pip install .[vector]` when ChromaDB or pgvector support is required.

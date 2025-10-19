@@ -22,6 +22,13 @@ setup(
         "requests>=2.31",
         "playwright>=1.40",
     ],
+    extras_require={
+        "dev": ["pytest>=7.4"],
+        "vector": [
+            "chromadb>=0.4.22",
+            "psycopg[binary]>=3.1",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "agi-core=agi_core.app:main",
