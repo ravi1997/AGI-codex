@@ -6,11 +6,12 @@ services:
     volumes:
       - .:/app
     working_dir: /app
-    command: ["python", "-m", "agi_core.app"]
+    command: ["python", "-m", "agi_core.app", "--config", "config/docker.yaml"]
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
       - memory-db
+      - vector-db
   memory-db:
     image: ankane/pgvector
     environment:

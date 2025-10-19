@@ -2,8 +2,8 @@ memory:
   vector_backend: "chromadb"
   vector_episodic_collection: "agi_episodic"
   vector_semantic_collection: "agi_semantic"
-  chroma_connection: "http://localhost:8000"
-  pgvector_dsn: "postgresql://agi:agi@localhost:5432/agi_memory"
+  chroma_connection: "http://vector-db:8000"
+  pgvector_dsn: "postgresql://agi:agi@memory-db:5432/agi_memory"
   pgvector_table: "memory_records"
   pgvector_namespace_column: "namespace"
   pgvector_dimension: 1536
@@ -33,6 +33,3 @@ learning:
   max_autonomous_interval_sec: 3600
   telemetry_cpu_threshold: 85.0
   telemetry_memory_threshold_mb: 1024.0
-logging:
-  level: "INFO"
-  log_dir: "logs"

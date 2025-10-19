@@ -23,7 +23,7 @@
    - *Episodic Store*: Recent interactions stored in vector DB (ChromaDB/pgvector) with recency decay.
    - *Semantic Store*: Curated knowledge base with embedding + metadata (PostgreSQL + pgvector).
    - *Procedural Store*: Repository of scripts, workflows, and automation policies versioned in Git.
-   - *Memory Orchestrator*: Handles retrieval augmentation, consolidation, summarization, and memory hygiene.
+  - *Memory Orchestrator*: Handles retrieval augmentation, consolidation, summarization, and memory hygiene with dynamic backend selection (JSON, ChromaDB, or pgvector).
 4. **Tooling Layer**
    - *Terminal Tool*: Executes shell commands via sandbox with safety policies.
    - *File I/O Tool*: Reads/writes local files with audit logging.

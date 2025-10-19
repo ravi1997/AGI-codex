@@ -12,8 +12,44 @@ from pydantic import BaseModel, Field
 class MemoryConfig(BaseModel):
     """Settings for memory backends."""
 
-    vector_backend: str = Field(
-        "chromadb", description="Vector store backend identifier (e.g., chromadb, pgvector)."
+    vector_backend: Optional[str] = Field(
+        None,
+        description=(
+            "Vector store backend identifier (e.g., chromadb, pgvector). "
+            "When omitted the file-backed stores are used."
+        ),
+    )
+    vector_episodic_collection: str = Field(
+        "agi_episodic",
+        description="Collection or namespace to use for episodic memories in vector stores.",
+    )
+    vector_semantic_collection: str = Field(
+        "agi_semantic",
+        description="Collection or namespace to use for semantic memories in vector stores.",
+    )
+    chroma_connection: str = Field(
+        "http://localhost:8000",
+        description=(
+            "Connection target for Chroma. Supports http(s) endpoints, file:// URIs, "
+            "or filesystem paths for embedded deployments."
+        ),
+    )
+    pgvector_dsn: str = Field(
+        "postgresql://agi:agi@localhost:5432/agi_memory",
+        description="PostgreSQL connection string for pgvector-backed memories.",
+    )
+    pgvector_table: str = Field(
+        "memory_records",
+        description="Table name used to persist pgvector-backed memories.",
+    )
+    pgvector_namespace_column: str = Field(
+        "namespace",
+        description="Column storing the logical namespace/collection for pgvector records.",
+    )
+    pgvector_dimension: int = Field(
+        1536,
+        ge=1,
+        description="Dimensionality of the stored embeddings for pgvector tables.",
     )
     episodic_db_path: Path = Field(
         Path("storage/episodic/memory.json"), description="Location for episodic memory persistence."
