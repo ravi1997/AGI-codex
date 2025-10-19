@@ -25,10 +25,13 @@ def main() -> None:
     config = load_config(args.config)
     agent = AgentKernel(config)
 
-    if args.once:
-        agent.run_once()
-    else:
-        agent.run_forever()
+    try:
+        if args.once:
+            agent.run_once()
+        else:
+            agent.run_forever()
+    finally:
+        agent.shutdown()
 
 
 if __name__ == "__main__":

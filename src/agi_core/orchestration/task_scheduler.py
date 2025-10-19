@@ -78,3 +78,19 @@ class TaskScheduler:
     def pending_tasks(self) -> Iterable[ScheduledTask]:
         """Return snapshot of pending tasks."""
         return list(self._queue)
+
+    @property
+    def autonomous_interval(self) -> int:
+        """Return the current autonomous task interval in seconds."""
+
+        return int(self._config.autonomous_task_interval_sec)
+
+    def update_autonomous_interval(self, seconds: int) -> None:
+        """Dynamically adjust the autonomous task cadence."""
+
+        seconds = max(1, int(seconds))
+        if seconds == self._config.autonomous_task_interval_sec:
+            return
+
+        self._config.autonomous_task_interval_sec = seconds
+        LOGGER.info("Autonomous task interval updated to %s seconds", seconds)

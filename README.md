@@ -8,6 +8,8 @@ AGI Codex is a modular autonomous agent scaffold designed to operate as a backgr
 - Persistent episodic, semantic, and procedural memory stores with automatic outcome logging
 - Tool plugin framework with sandboxed terminal, file I/O, and telemetry monitor tools
 - Telemetry collection and autonomous task proposals with failure remediation loops
+- Feedback analytics that track success metrics and adjust autonomous scheduling heuristics
+- Learning pipeline that writes JSONL experience datasets for downstream LoRA/DPO fine-tuning
 - Deployment options via systemd or Docker Compose
 
 ## Getting Started
@@ -46,6 +48,18 @@ docker compose up --build
 
 ### Configuration
 Default configuration resides in `config/default.yaml`. Override by passing `--config` to `agi-core`.
+
+Key sections include:
+
+- `memory`: File locations for episodic, semantic, and procedural stores.
+- `tools`: Sandbox permissions for terminal and file I/O tooling.
+- `scheduler`: Task concurrency, autonomous cadence, and idle sleep duration.
+- `logging`: Log level and directory paths.
+- `learning`: Feedback history size, dataset export path, and optimization thresholds.
+
+### Learning Outputs
+- Feedback analytics persist to `storage/analytics/feedback.json` and track success rates over time.
+- Fine-tuning datasets accumulate in `storage/learning/dataset.jsonl` (JSONL format) to bootstrap LoRA/DPO pipelines.
 
 ## Project Structure
 - `src/agi_core/`: Python package containing orchestration, reasoning, memory, tools, and system modules.

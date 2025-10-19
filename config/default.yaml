@@ -9,6 +9,20 @@ tools:
 scheduler:
   max_concurrent_tasks: 1
   autonomous_task_interval_sec: 1800
+  idle_sleep_seconds: 1.0
 logging:
   level: "INFO"
   log_dir: "logs"
+learning:
+  feedback_path: "storage/analytics/feedback.json"
+  max_feedback_history: 200
+  dataset_path: "storage/learning/dataset.jsonl"
+  dataset_flush_batch: 5
+  min_samples_for_optimization: 10
+  success_rate_floor: 0.6
+  success_rate_ceiling: 0.9
+  optimizer_cooldown: 5
+  min_autonomous_interval_sec: 300
+  max_autonomous_interval_sec: 3600
+  telemetry_cpu_threshold: 85.0
+  telemetry_memory_threshold_mb: 1024.0

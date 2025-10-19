@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
 from ..config import AgentConfig
 from ..logging_config import configure_logging
+from ..learning import FeedbackCollector, LearningPipeline, SelfOptimizer
 from ..memory.orchestrator import MemoryOrchestrator
 from ..reasoning.context import ContextBuilder
 from ..reasoning.executor import Executor
@@ -57,6 +59,10 @@ class AgentKernel:
         self.executor = Executor(self.tools, working_directory=str(sandbox))
         self.verifier = Verifier()
         self.context_builder = ContextBuilder(self.memory)
+        self.feedback = FeedbackCollector(config.learning)
+        self.learning_pipeline = LearningPipeline(config.learning)
+        self.optimizer = SelfOptimizer(config.learning)
+        self._is_shutdown = False
 
         self.dialogue.register_user_message_handler(self._handle_user_message)
 
@@ -75,22 +81,26 @@ class AgentKernel:
         self.scheduler.mark_autonomous_proposal()
         LOGGER.info("Proposed autonomous task: %s", description)
 
-    def run_once(self) -> None:
-        """Execute a single control loop iteration."""
+    def run_once(self) -> bool:
+        """Execute a single control loop iteration.
+
+        Returns:
+            bool: Whether a task was processed during the iteration.
+        """
         if self.scheduler.should_propose_autonomous():
             self._propose_autonomous_task()
 
         task = self.scheduler.pop_next()
         if task is None:
             LOGGER.debug("No tasks available")
-            return
+            return False
 
         self.state.last_task = task
         LOGGER.info("Processing task %s: %s", task.task_id, task.description)
 
         if not self.safety.approve_goal(task.description):
             self.dialogue.send_output("Task rejected by safety guard")
-            return
+            return False
 
         telemetry = self.telemetry.snapshot()
         context = self.context_builder.build(task.description, telemetry, self.tools)
@@ -123,6 +133,26 @@ class AgentKernel:
             metadata=metadata,
         )
 
+        self.feedback.record_run(
+            task_id=str(task.task_id),
+            goal=task.description,
+            success=success,
+            plan=plan,
+            results=results,
+            telemetry=telemetry,
+        )
+
+        self.learning_pipeline.add_example(
+            task_id=str(task.task_id),
+            goal=task.description,
+            success=success,
+            plan=plan,
+            results=results,
+            summary=summary,
+        )
+
+        self.optimizer.maybe_optimize(self.scheduler, self.feedback, telemetry)
+
         if not success:
             follow_up = (
                 f"Diagnose failure of task {task.task_id}: {task.description}"
@@ -137,13 +167,19 @@ class AgentKernel:
                 autonomous=True,
             )
 
+        return True
+
     def run_forever(self) -> None:
         LOGGER.info("Starting agent loop")
         try:
             while True:
-                self.run_once()
+                processed = self.run_once()
+                if not processed:
+                    time.sleep(self._config.scheduler.idle_sleep_seconds)
         except KeyboardInterrupt:
             LOGGER.info("Agent loop stopped by user")
+        finally:
+            self.shutdown()
 
     def _summarize_execution(
         self,
@@ -169,3 +205,21 @@ class AgentKernel:
             lines.append(f"- {step.name} [{outcome}] -> {detail}")
 
         return "\n".join(lines)
+
+    def shutdown(self) -> None:
+        """Flush buffers and emit final telemetry before exit."""
+
+        if self._is_shutdown:
+            return
+
+        self._is_shutdown = True
+        LOGGER.info("Shutting down agent kernel")
+        self.learning_pipeline.flush()
+        metrics = self.feedback.metrics
+        LOGGER.info(
+            "Final feedback metrics: runs=%s successes=%s failures=%s success_rate=%.2f%%",
+            metrics.total_runs,
+            metrics.successes,
+            metrics.failures,
+            metrics.success_rate * 100,
+        )

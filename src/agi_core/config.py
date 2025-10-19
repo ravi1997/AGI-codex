@@ -44,6 +44,11 @@ class SchedulerConfig(BaseModel):
     autonomous_task_interval_sec: int = Field(
         900, description="Interval for proposing autonomous tasks."
     )
+    idle_sleep_seconds: float = Field(
+        1.0,
+        ge=0.1,
+        description="Delay applied when the scheduler is idle to avoid busy-waiting.",
+    )
 
 
 class LoggingConfig(BaseModel):
@@ -53,6 +58,29 @@ class LoggingConfig(BaseModel):
     log_dir: Path = Field(Path("logs"), description="Directory for log files.")
 
 
+class LearningConfig(BaseModel):
+    """Settings controlling feedback capture and self-optimization."""
+
+    feedback_path: Path = Field(
+        Path("storage/analytics/feedback.json"),
+        description="Path where feedback metrics are stored.",
+    )
+    max_feedback_history: int = Field(200, ge=1)
+    dataset_path: Path = Field(
+        Path("storage/learning/dataset.jsonl"),
+        description="JSONL dataset destination for fine-tuning records.",
+    )
+    dataset_flush_batch: int = Field(5, ge=1)
+    min_samples_for_optimization: int = Field(10, ge=1)
+    success_rate_floor: float = Field(0.6, ge=0.0, le=1.0)
+    success_rate_ceiling: float = Field(0.9, ge=0.0, le=1.0)
+    optimizer_cooldown: int = Field(5, ge=0)
+    min_autonomous_interval_sec: int = Field(300, ge=1)
+    max_autonomous_interval_sec: int = Field(3600, ge=1)
+    telemetry_cpu_threshold: float = Field(85.0, ge=0.0)
+    telemetry_memory_threshold_mb: float = Field(1024.0, ge=0.0)
+
+
 class AgentConfig(BaseModel):
     """Top-level configuration object."""
 
@@ -60,6 +88,7 @@ class AgentConfig(BaseModel):
     tools: ToolConfig = ToolConfig()
     scheduler: SchedulerConfig = SchedulerConfig()
     logging: LoggingConfig = LoggingConfig()
+    learning: LearningConfig = LearningConfig()
 
     class Config:
         arbitrary_types_allowed = True
@@ -76,7 +105,8 @@ def load_config(path: Optional[os.PathLike[str]] = None) -> AgentConfig:
         AgentConfig: Parsed configuration model.
     """
 
-    default_path = Path(__file__).resolve().parent.parent / "config" / "default.yaml"
+    project_root = Path(__file__).resolve().parents[2]
+    default_path = project_root / "config" / "default.yaml"
     config_path = Path(path) if path else default_path
 
     if not config_path.exists():
