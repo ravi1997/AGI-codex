@@ -16,7 +16,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from agi_core.config import LearningConfig  # type: ignore  # noqa: E402
 from agi_core.learning.dataset import format_dpo_examples, format_lora_examples  # type: ignore  # noqa: E402
-from agi_core.learning.trainer import FineTuningPipeline  # type: ignore  # noqa: E402
+from agi_core.learning.jobs import TrainingJobRunner  # type: ignore  # noqa: E402
 
 
 def _sample_record(task_id: str, *, success: bool, summary: str) -> dict:
@@ -72,6 +72,7 @@ class FineTuningPipelineTest(unittest.TestCase):
             training_strategy="lora",
             training_base_model="gpt2",
         )
+        self.runner = TrainingJobRunner(self.config)
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
@@ -87,8 +88,12 @@ class FineTuningPipelineTest(unittest.TestCase):
         self.assertTrue(dpo_examples[0].chosen)
 
     def test_dry_run_pipeline_emits_metadata(self) -> None:
-        pipeline = FineTuningPipeline(self.config)
-        result = pipeline.run(dry_run=True)
+        status = self.runner.run_if_ready(dry_run=True, min_samples=1)
+
+        self.assertTrue(status.triggered)
+        self.assertIsNotNone(status.result)
+        assert status.result is not None
+        result = status.result
 
         self.assertTrue(result.dry_run)
         metadata_file = result.output_dir / "metadata.json"
@@ -101,6 +106,14 @@ class FineTuningPipelineTest(unittest.TestCase):
             Path(overrides["learning"]["active_adapter_path"]).resolve(),
             (result.output_dir / "adapter").resolve(),
         )
+
+    def test_training_runner_skips_when_threshold_not_met(self) -> None:
+        status = self.runner.run_if_ready(dry_run=True, min_samples=5)
+
+        self.assertFalse(status.triggered)
+        self.assertIsNone(status.result)
+        self.assertEqual(status.sample_count, 2)
+        self.assertEqual(status.threshold, 5)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -9,7 +9,7 @@ from pathlib import Path
 from ..config import LearningConfig
 from ..orchestration.task_scheduler import TaskScheduler
 from .feedback import FeedbackCollector
-from .dataset import count_non_empty_lines
+from .jobs import TrainingJobRunner
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class SelfOptimizer:
         self._cooldown_remaining = 0
         self._active_alerts: Set[str] = set()
         self._last_training_sample_count = 0
+        self._training_runner = TrainingJobRunner(config)
 
     def maybe_optimize(
         self,
@@ -120,8 +121,9 @@ class SelfOptimizer:
 
     def _maybe_enqueue_training(self, scheduler: TaskScheduler) -> None:
         dataset_path: Path = self._config.dataset_path
-        sample_count = count_non_empty_lines(dataset_path)
-        if sample_count < self._config.min_samples_for_training:
+        sample_count = self._training_runner.sample_count(dataset_path)
+        threshold = self._config.min_samples_for_training
+        if sample_count < threshold:
             self._last_training_sample_count = sample_count
             return
 
@@ -142,6 +144,7 @@ class SelfOptimizer:
                 "action": "fine_tune",
                 "command": " ".join(command),
                 "samples": str(sample_count),
+                "threshold": str(threshold),
             },
             autonomous=True,
         )

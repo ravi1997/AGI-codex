@@ -28,8 +28,12 @@ asking operators to run:
 agi-core-train --strategy=<lora|dpo> --dataset=storage/learning/dataset.jsonl
 ```
 
-The scheduler metadata includes the suggested command and the current sample
-count so the task can be triggered via cron or by the agent’s terminal tool.
+The scheduler metadata includes the suggested command, the current sample
+count, and the target threshold so the task can be triggered via cron or by the
+agent’s terminal tool. Operators who prefer unattended execution can call the
+CLI with `--require-threshold`, which internally uses the
+`TrainingJobRunner` helper to confirm the dataset is ready before invoking the
+LoRA/DPO trainers.
 
 ## Running the fine-tuning CLI
 
@@ -45,6 +49,9 @@ Flags:
 
 * `--dry-run` skips actual Hugging Face training and only exercises orchestration
   (ideal for quick validation or CI).
+* `--require-threshold` consults the configured minimum sample count and exits
+  early if the dataset is too small (combine with `--min-samples` to override the
+  threshold for ad-hoc experiments).
 * Omitting `--output-dir` creates a timestamped folder under
   `storage/learning/models/`.
 * Results are summarised in `metadata.json` within the run directory and also in
