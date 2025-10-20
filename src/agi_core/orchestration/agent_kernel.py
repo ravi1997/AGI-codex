@@ -21,7 +21,7 @@ from ..tools.browser import BrowserAutomationTool
 from ..tools.file_io import FileIOTool
 from ..tools.rest_client import RestClientTool
 from ..tools.system_monitor import SystemMonitorTool
-from ..tools.terminal import TerminalTool
+from ..tools.terminal import TerminalNetworkPolicy, TerminalTool
 from .dialogue_manager import DialogueManager
 from .task_scheduler import ScheduledTask, TaskScheduler
 
@@ -56,11 +56,15 @@ class AgentKernel:
         sandbox = config.tools.sandbox_root
         allow_network = config.tools.allow_network
         network_allowlist = config.tools.network_allowlist
+        terminal_policy = (
+            TerminalNetworkPolicy.online(network_allowlist)
+            if allow_network
+            else TerminalNetworkPolicy.offline()
+        )
         self.tools.register(
             TerminalTool(
                 sandbox_root=sandbox,
-                allow_network=allow_network,
-                network_allowlist=network_allowlist,
+                network_policy=terminal_policy,
             )
         )
         self.tools.register(FileIOTool(sandbox_root=sandbox))

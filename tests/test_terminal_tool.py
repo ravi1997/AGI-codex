@@ -40,6 +40,18 @@ def test_terminal_blocks_network_when_disabled(tmp_path: Path, tool_context: Too
     assert "disabled" in result.error.lower()
 
 
+def test_terminal_blocks_network_path_when_disabled(
+    tmp_path: Path, tool_context: ToolContext
+) -> None:
+    tool = TerminalTool(sandbox_root=tmp_path, allow_network=False)
+
+    result = tool.run(tool_context, "/usr/bin/curl --version")
+
+    assert not result.success
+    assert result.error is not None
+    assert "disabled" in result.error.lower()
+
+
 def test_terminal_allows_non_network_commands_when_disabled(
     tmp_path: Path, tool_context: ToolContext, monkeypatch: pytest.MonkeyPatch
 ) -> None:
