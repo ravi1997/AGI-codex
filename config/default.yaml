@@ -12,8 +12,8 @@ memory:
   procedural_repo_path: "storage/procedural"
 tools:
   sandbox_root: "sandbox"
-  allow_network: false
-  network_allowlist: []
+  allow_network: false  # When false, TerminalTool blocks common networking binaries (curl, wget, etc.).
+  network_allowlist: []  # When true, restricts which networking binaries are permitted; empty means allow all.
   browser:
     enabled: false
     headless: true
