@@ -109,6 +109,14 @@ class ToolConfig(BaseModel):
     allow_network: bool = Field(
         False, description="Whether network-enabled tools are permitted by default."
     )
+    network_allowlist: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Optional list of networking binaries that remain permitted when "
+            "networking is enabled. When unset all known networking commands are "
+            "allowed, otherwise only entries in the list are accepted."
+        ),
+    )
     browser: BrowserToolConfig = BrowserToolConfig()
     rest: RestClientConfig = RestClientConfig()
 
