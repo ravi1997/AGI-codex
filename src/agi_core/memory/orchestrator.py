@@ -87,12 +87,16 @@ class MemoryOrchestrator:
         LOGGER.debug("Added semantic memory: %s", metadata)
 
     def retrieve_relevant(self, query_embedding: Sequence[float], limit: int = 5) -> List[MemoryRecord]:
-        scored_records = []
-        for record in self.episodic.all_records():
-            scored_records.append((record.similarity(query_embedding), record))
-        for record in self.semantic.all_records():
-            scored_records.append((record.similarity(query_embedding), record))
+        def _scored(records: Sequence[MemoryRecord]) -> List[tuple[float, MemoryRecord]]:
+            return [
+                (record.similarity(query_embedding), record)
+                for record in records
+            ]
 
+        episodic_hits = self.episodic.query(query_embedding, limit=limit)
+        semantic_hits = self.semantic.query(query_embedding, limit=limit)
+
+        scored_records = _scored(episodic_hits) + _scored(semantic_hits)
         scored_records.sort(key=lambda item: item[0], reverse=True)
 
         seen = set()
