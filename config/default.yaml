@@ -13,6 +13,7 @@ memory:
 tools:
   sandbox_root: "sandbox"
   allow_network: false
+  network_allowlist: []
   browser:
     enabled: false
     headless: true

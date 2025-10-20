@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -108,6 +108,13 @@ class ToolConfig(BaseModel):
     )
     allow_network: bool = Field(
         False, description="Whether network-enabled tools are permitted by default."
+    )
+    network_allowlist: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Commands (e.g. curl, wget) permitted to access the network when networking"
+            " is enabled for the terminal tool."
+        ),
     )
     browser: BrowserToolConfig = BrowserToolConfig()
     rest: RestClientConfig = RestClientConfig()

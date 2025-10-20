@@ -4,6 +4,22 @@ This project now includes two opt-in tools that enable controlled interaction
 with browsers and HTTP APIs. Both tools are disabled by default and require
 explicit configuration updates before they are exposed to the planner.
 
+The shared tool configuration also controls whether the sandboxed terminal is
+permitted to run networking commands:
+
+```yaml
+tools:
+  allow_network: true
+  network_allowlist:
+    - curl
+    - wget
+```
+
+When `allow_network` is `false`, commands such as `curl` and `wget` are rejected
+outright. When `allow_network` is `true`, the optional `network_allowlist`
+restricts which networking binaries are usable, allowing you to limit access to
+trusted tooling.
+
 ## Browser Automation
 
 The `browser_automation` tool wraps [Playwright](https://playwright.dev/) to
