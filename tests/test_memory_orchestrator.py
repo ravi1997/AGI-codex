@@ -33,6 +33,11 @@ def test_retrieve_relevant_includes_semantic_with_overlap(tmp_path) -> None:
         [0.9, 0.1],
         {"source": "episodic", "id": "episodic-supporting"},
     )
+    orchestrator.add_episode(
+        "episodic filler",
+        [0.6, 0.4],
+        {"source": "episodic", "id": "episodic-filler"},
+    )
 
     orchestrator.add_semantic(
         "shared memory",
