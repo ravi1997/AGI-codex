@@ -12,7 +12,8 @@ memory:
   procedural_repo_path: "storage/procedural"
 tools:
   sandbox_root: "sandbox"
-  allow_network: false
+  allow_network: false  # When true, networking commands like curl are permitted.
+  network_allowlist: []  # Optional list of networking binaries permitted when networking is enabled.
   browser:
     enabled: false
     headless: true
