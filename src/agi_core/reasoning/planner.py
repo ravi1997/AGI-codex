@@ -94,8 +94,13 @@ class Planner:
 
         if context.memory_snippets:
             lines.append("\n## Relevant Memories")
-            for snippet in context.memory_snippets:
-                lines.append(f"- {snippet}")
+            for snippet, metadata in zip(context.memory_snippets, context.memory_metadata):
+                label = metadata.get("label") if metadata else None
+                if label:
+                    lines.append(f"- {label}")
+                    continue
+                first_line = snippet.splitlines()[0] if snippet else ""
+                lines.append(f"- {first_line}")
 
         if context.available_tools:
             lines.append("\n## Available Tools")

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List
 
 import sys
 from pathlib import Path
@@ -13,11 +15,17 @@ from agi_core.tools.base import Tool, ToolContext, ToolRegistry, ToolResult
 @dataclass
 class _MemoryRecord:
     content: str
+    metadata: Dict[str, str]
 
 
 class _DummyMemory:
+    def __init__(self, record: _MemoryRecord | None = None) -> None:
+        self._record = record or _MemoryRecord(
+            content="Previous observation", metadata={}
+        )
+
     def retrieve_relevant(self, query_embedding: List[float], limit: int = 5):
-        return [_MemoryRecord(content="Previous observation")]
+        return [self._record]
 
 
 class _EchoTool(Tool):
@@ -37,4 +45,19 @@ def test_context_includes_tool_descriptions():
 
     assert context.available_tools == {"echo": "Echo text back to the user."}
     assert context.memory_snippets == ["Previous observation"]
+    assert context.memory_metadata == [{}]
     assert len(context.query_embedding) == builder._embedding_dim
+
+
+def test_context_uses_full_semantic_summary() -> None:
+    summary = "Task 9 (user): inspect logs\nStatus: SUCCESS\n\nFull summary body"
+    record = _MemoryRecord(
+        content=summary,
+        metadata={"label": "Outcome summary for task 9"},
+    )
+    builder = ContextBuilder(_DummyMemory(record))
+
+    context = builder.build("Review logs", telemetry={}, tools=ToolRegistry())
+
+    assert context.memory_snippets == [summary]
+    assert context.memory_metadata == [{"label": "Outcome summary for task 9"}]
