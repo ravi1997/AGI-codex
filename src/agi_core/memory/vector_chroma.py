@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Iterable, List, Sequence
+from typing import TYPE_CHECKING, Iterable, List, Sequence
 from urllib.parse import urlparse
 from uuid import uuid4
 
 from .base import MemoryRecord, MemoryStore
+
+if TYPE_CHECKING:  # pragma: no cover - for static typing only
+    from ..config import MemoryConfig
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +38,12 @@ class ChromaMemory(MemoryStore):
             name=collection,
             metadata={"hnsw:space": "cosine"},
         )
+
+    @classmethod
+    def from_config(cls, config: "MemoryConfig", collection: str) -> "ChromaMemory":
+        """Instantiate the adapter using connection details from ``MemoryConfig``."""
+
+        return cls(connection=config.chroma_connection, collection=collection)
 
     @staticmethod
     def _create_client(chromadb_module: object, connection: str):

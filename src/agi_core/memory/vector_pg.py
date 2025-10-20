@@ -4,10 +4,13 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Iterable, List, Sequence
+from typing import TYPE_CHECKING, Iterable, List, Sequence
 from uuid import uuid4
 
 from .base import MemoryRecord, MemoryStore
+
+if TYPE_CHECKING:  # pragma: no cover - for static typing only
+    from ..config import MemoryConfig
 
 LOGGER = logging.getLogger(__name__)
 
@@ -186,3 +189,20 @@ class PgVectorMemory(MemoryStore):
                 metadata=metadata,
                 created_at=created_at_dt,
             )
+
+    @classmethod
+    def from_config(
+        cls,
+        config: "MemoryConfig",
+        *,
+        namespace: str,
+    ) -> "PgVectorMemory":
+        """Instantiate the adapter using connection details from ``MemoryConfig``."""
+
+        return cls(
+            dsn=config.pgvector_dsn,
+            namespace=namespace,
+            table=config.pgvector_table,
+            namespace_column=config.pgvector_namespace_column,
+            dimension=config.pgvector_dimension,
+        )
