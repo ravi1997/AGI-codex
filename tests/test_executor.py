@@ -53,6 +53,27 @@ def test_executor_handles_tool_exception(tmp_path) -> None:
     assert result.error == "boom"
 
 
+def test_execute_step_returns_failed_result_on_exception(tmp_path) -> None:
+    registry = ToolRegistry()
+    registry.register(FailingTool())
+
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    executor = Executor(registry, working_directory=str(work_dir))
+
+    step = PlanStep(
+        name="fail-step",
+        description="This step should fail",
+        tool="failing-tool",
+    )
+
+    result = executor._execute_step(step)
+
+    assert result.success is False
+    assert result.output == ""
+    assert result.error == "boom"
+
+
 def test_executor_continues_after_failure(tmp_path) -> None:
     registry = ToolRegistry()
     registry.register(FailingTool())
