@@ -112,8 +112,9 @@ class ToolConfig(BaseModel):
     network_allowlist: List[str] = Field(
         default_factory=list,
         description=(
-            "Commands (e.g. curl, wget) permitted to access the network when networking"
-            " is enabled for the terminal tool."
+            "Optional list of networking binaries that remain permitted when "
+            "networking is enabled. When unset all known networking commands are "
+            "allowed, otherwise only entries in the list are accepted."
         ),
     )
     browser: BrowserToolConfig = BrowserToolConfig()

@@ -6,6 +6,8 @@ After=network.target
 Type=simple
 WorkingDirectory=%h/agi-core
 EnvironmentFile=%h/agi-core/.env
+# Ensure optional vector dependencies are installed (e.g. run `AGI_CORE_INSTALL_VECTOR=1 ./install.sh`)
+# when AGI_CORE_CONFIG selects a remote Chroma or pgvector backend.
 ExecStart=%h/agi-core/.venv/bin/python -m agi_core.app --config ${AGI_CORE_CONFIG:-%h/agi-core/config/default.yaml}
 Restart=on-failure
 Environment=PYTHONUNBUFFERED=1

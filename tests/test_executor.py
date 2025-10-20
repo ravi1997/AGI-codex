@@ -16,6 +16,14 @@ class FailingTool(Tool):
         raise RuntimeError("boom")
 
 
+class SuccessfulTool(Tool):
+    name = "successful-tool"
+    description = "Tool that always succeeds"
+
+    def run(self, context: ToolContext, *args: str, **kwargs: str) -> ToolResult:  # type: ignore[override]
+        return ToolResult(success=True, output="ok")
+
+
 def test_executor_handles_tool_exception(tmp_path) -> None:
     registry = ToolRegistry()
     registry.register(FailingTool())
@@ -43,3 +51,43 @@ def test_executor_handles_tool_exception(tmp_path) -> None:
     assert result.success is False
     assert result.output == ""
     assert result.error == "boom"
+
+
+def test_executor_continues_after_failure(tmp_path) -> None:
+    registry = ToolRegistry()
+    registry.register(FailingTool())
+    registry.register(SuccessfulTool())
+
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    executor = Executor(registry, working_directory=str(work_dir))
+
+    plan = Plan(
+        goal="test continuation after failure",
+        context_summary="",
+        steps=[
+            PlanStep(
+                name="fail-step",
+                description="This step should fail",
+                tool="failing-tool",
+            ),
+            PlanStep(
+                name="success-step",
+                description="This step should succeed",
+                tool="successful-tool",
+            ),
+        ],
+    )
+
+    results = executor.execute(plan)
+
+    assert len(results) == 2
+    first, second = results
+
+    assert first.success is False
+    assert first.output == ""
+    assert first.error == "boom"
+
+    assert second.success is True
+    assert second.output == "ok"
+    assert second.error is None
