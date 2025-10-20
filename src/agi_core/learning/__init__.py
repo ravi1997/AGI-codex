@@ -1,5 +1,6 @@
 """Learning and self-optimization interfaces."""
 from .feedback import FeedbackCollector
+from .jobs import TrainingJobRunner, TrainingJobStatus
 from .optimizer import SelfOptimizer
 from .pipeline import LearningPipeline
 from .trainer import FineTuningPipeline, TrainingResult
@@ -10,4 +11,6 @@ __all__ = [
     "LearningPipeline",
     "FineTuningPipeline",
     "TrainingResult",
+    "TrainingJobRunner",
+    "TrainingJobStatus",
 ]
