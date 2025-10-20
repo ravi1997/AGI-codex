@@ -30,10 +30,12 @@ agi-core-train --strategy=<lora|dpo> --dataset=storage/learning/dataset.jsonl
 
 The scheduler metadata includes the suggested command, the current sample
 count, and the target threshold so the task can be triggered via cron or by the
-agent’s terminal tool. Operators who prefer unattended execution can call the
-CLI with `--require-threshold`, which internally uses the
-`TrainingJobRunner` helper to confirm the dataset is ready before invoking the
-LoRA/DPO trainers.
+agent’s terminal tool. The helper lives in
+`agi_core.learning.scheduling.schedule_training_if_ready`, so external
+automation can reuse the same hook to enqueue training jobs without duplicating
+the readiness logic. Operators who prefer unattended execution can call the CLI
+with `--require-threshold`, which internally uses the `TrainingJobRunner`
+helper to confirm the dataset is ready before invoking the LoRA/DPO trainers.
 
 ## Running the fine-tuning CLI
 
