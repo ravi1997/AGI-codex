@@ -154,6 +154,7 @@ class AgentKernel:
             "success": str(success),
             "task_id": str(task.task_id),
             "source": task.metadata.get("source", "unknown"),
+            "label": f"Outcome summary for task {task.task_id}",
         }
         self.memory.add_episode(
             content=summary,
@@ -163,7 +164,7 @@ class AgentKernel:
 
         outcome_embedding = self.context_builder.embed(summary)
         self.memory.add_semantic(
-            content=f"Outcome summary for task {task.task_id}",
+            content=summary,
             embedding=outcome_embedding,
             metadata=metadata,
         )

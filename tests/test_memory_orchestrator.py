@@ -39,16 +39,17 @@ def test_retrieve_relevant_includes_semantic_with_overlap(tmp_path) -> None:
         {"source": "episodic", "id": "episodic-filler"},
     )
 
+    summary_text = "Task 42 (user): investigate logs\nStatus: SUCCESS\n\nDetails captured"
     orchestrator.add_semantic(
-        "shared memory",
+        summary_text,
         [1.0, 0.0],
-        {"source": "semantic", "id": "semantic-shared"},
+        {"source": "semantic", "id": "semantic-shared", "label": "Outcome summary"},
     )
 
     results = orchestrator.retrieve_relevant(query, limit=2)
 
     assert len(results) == 2
     assert results[0].metadata["source"] == "semantic"
-    assert results[0].content == "shared memory"
-    assert sum(1 for record in results if record.content == "shared memory") == 1
+    assert results[0].content == summary_text
+    assert sum(1 for record in results if record.content == summary_text) == 1
     assert any(record.metadata["source"] == "episodic" for record in results)
