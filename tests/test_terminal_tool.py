@@ -40,7 +40,28 @@ def test_terminal_blocks_network_when_disabled(tmp_path: Path, tool_context: Too
     assert "disabled" in result.error.lower()
 
 
-def test_terminal_allows_network_when_enabled(tmp_path: Path, tool_context: ToolContext, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_terminal_allows_non_network_commands_when_disabled(
+    tmp_path: Path, tool_context: ToolContext, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tool = TerminalTool(sandbox_root=tmp_path, allow_network=False)
+
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(args, cwd, check, capture_output, text):  # type: ignore[no-untyped-def]
+        captured["args"] = args
+        return DummyCompletedProcess(returncode=0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    result = tool.run(tool_context, "ls")
+
+    assert result.success
+    assert captured["args"][0] == "ls"
+
+
+def test_terminal_allows_network_when_enabled(
+    tmp_path: Path, tool_context: ToolContext, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = TerminalTool(sandbox_root=tmp_path, allow_network=True)
 
     captured: dict[str, list[str]] = {}
@@ -69,6 +90,29 @@ def test_terminal_blocks_command_not_in_allowlist(tmp_path: Path, tool_context: 
     assert not result.success
     assert result.error is not None
     assert "allowlist" in result.error.lower()
+
+
+def test_terminal_allows_command_in_allowlist(
+    tmp_path: Path, tool_context: ToolContext, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tool = TerminalTool(
+        sandbox_root=tmp_path,
+        allow_network=True,
+        network_allowlist=["curl"],
+    )
+
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(args, cwd, check, capture_output, text):  # type: ignore[no-untyped-def]
+        captured["args"] = args
+        return DummyCompletedProcess(returncode=0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    result = tool.run(tool_context, "curl http://example.com")
+
+    assert result.success
+    assert captured["args"][0] == "curl"
 
 
 def test_allowlist_still_blocks_when_network_disabled(tmp_path: Path, tool_context: ToolContext) -> None:
