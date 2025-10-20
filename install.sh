@@ -9,4 +9,10 @@ fi
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -e .
+extras_suffix=""
+if [[ "${AGI_CORE_INSTALL_VECTOR:-0}" == "1" ]]; then
+  echo "Installing vector store extras"
+  extras_suffix="[vector]"
+fi
+
+pip install -e ".${extras_suffix}"
