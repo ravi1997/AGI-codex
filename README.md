@@ -26,6 +26,13 @@ source .venv/bin/activate
 agi-core --once
 ```
 
+Set `AGI_CORE_INSTALL_VECTOR=1` when running `install.sh` to automatically pull in the optional
+Chroma/pgvector dependencies required for remote vector stores:
+
+```bash
+AGI_CORE_INSTALL_VECTOR=1 ./install.sh
+```
+
 ### Development Scripts
 - `install.sh`: Create virtual environment and install package locally.
 - `bootstrap.sh`: Bootstrap environment and run a single agent iteration.
@@ -33,7 +40,7 @@ agi-core --once
 
 ### Running as a Service
 1. Copy `systemd/agi-core.service` to `~/.config/systemd/user/` (or `/etc/systemd/system/`).
-2. Adjust `WorkingDirectory` and virtualenv paths as needed.
+2. Adjust `WorkingDirectory` and virtualenv paths as needed. Re-run `AGI_CORE_INSTALL_VECTOR=1 ./install.sh` if your configuration selects a vector backend so the required extras are present in the virtual environment.
 3. Create `~/.config/systemd/user/agi-core/.env` (or equivalent) and set `AGI_CORE_CONFIG` to the YAML profile that matches your deployment, e.g. `AGI_CORE_CONFIG=%h/agi-core/config/docker.yaml` for Chroma or `config/docker.pgvector.yaml` for pgvector.
 4. Reload systemd and enable the service:
    ```bash

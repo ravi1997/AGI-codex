@@ -23,6 +23,7 @@ class MemoryOrchestrator:
 
         self.episodic = self._build_store(
             backend,
+            store_name="episodic",
             default_factory=lambda: EpisodicMemory(config.episodic_db_path),
             vector_factory=lambda: self._build_vector_store(
                 backend,
@@ -32,6 +33,7 @@ class MemoryOrchestrator:
         )
         self.semantic = self._build_store(
             backend,
+            store_name="semantic",
             default_factory=lambda: SemanticMemory(config.semantic_db_path),
             vector_factory=lambda: self._build_vector_store(
                 backend,
@@ -45,19 +47,27 @@ class MemoryOrchestrator:
         self,
         backend: str,
         *,
+        store_name: str,
         default_factory,
         vector_factory,
     ):
         if not backend:
+            LOGGER.info("Using file-backed %s memory store", store_name)
             return default_factory()
         try:
             store = vector_factory()
-            LOGGER.info("Initialised %s vector memory backend", backend)
+            LOGGER.info(
+                "Initialised %s vector memory backend for %s store", backend, store_name
+            )
             return store
         except Exception as exc:  # pragma: no cover - depends on optional dependencies
             LOGGER.warning(
-                "Vector backend '%s' unavailable (%s). Falling back to file-backed store.",
+                (
+                    "Vector backend '%s' unavailable for %s store (%s). "
+                    "Falling back to file-backed store."
+                ),
                 backend,
+                store_name,
                 exc,
             )
             return default_factory()
@@ -87,24 +97,37 @@ class MemoryOrchestrator:
         LOGGER.debug("Added semantic memory: %s", metadata)
 
     def retrieve_relevant(self, query_embedding: Sequence[float], limit: int = 5) -> List[MemoryRecord]:
-        def _scored(records: Sequence[MemoryRecord]) -> List[tuple[float, MemoryRecord]]:
-            return [
-                (record.similarity(query_embedding), record)
-                for record in records
-            ]
+        limit = max(int(limit), 1)
+        per_store_limit = max(limit * 2, limit)
+        candidates: List[MemoryRecord] = []
 
-        episodic_hits = self.episodic.query(query_embedding, limit=limit)
-        semantic_hits = self.semantic.query(query_embedding, limit=limit)
+        for store_name, store in (("episodic", self.episodic), ("semantic", self.semantic)):
+            try:
+                records = store.query(query_embedding, limit=per_store_limit)
+            except Exception as exc:  # pragma: no cover - defensive logging
+                LOGGER.warning(
+                    (
+                        "Query against %s memory store failed (%s); "
+                        "falling back to linear scan."
+                    ),
+                    store_name,
+                    exc,
+                )
+                records = list(store.all_records())
+            candidates.extend(records)
 
-        scored_records = _scored(episodic_hits) + _scored(semantic_hits)
-        scored_records.sort(key=lambda item: item[0], reverse=True)
+        scored_records = sorted(
+            ((record.similarity(query_embedding), record) for record in candidates),
+            key=lambda item: item[0],
+            reverse=True,
+        )
 
-        seen = set()
+        seen_contents = set()
         unique: List[MemoryRecord] = []
         for _, record in scored_records:
-            if record.content in seen:
+            if record.content in seen_contents:
                 continue
-            seen.add(record.content)
+            seen_contents.add(record.content)
             unique.append(record)
             if len(unique) >= limit:
                 break

@@ -7,10 +7,13 @@ import unittest
 from math import sqrt
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from agi_core.config import MemoryConfig
 from agi_core.memory.orchestrator import MemoryOrchestrator
 from agi_core.memory.vector_chroma import ChromaMemory
+from agi_core.memory.episodic import EpisodicMemory
+from agi_core.memory.semantic import SemanticMemory
 
 
 class _FakeCollection:
@@ -119,6 +122,25 @@ class VectorMemoryIntegrationTest(unittest.TestCase):
             semantic_records = list(orchestrator.semantic.all_records())
             self.assertTrue(semantic_records)
             self.assertEqual(semantic_records[0].metadata["kind"], "semantic")
+
+    def test_vector_backend_falls_back_when_adapter_unavailable(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            storage_root = Path(tmpdir) / "storage"
+            storage_root.mkdir(parents=True, exist_ok=True)
+
+            config = MemoryConfig(
+                vector_backend="chromadb",
+                chroma_connection=":memory",
+                episodic_db_path=storage_root / "episodic.json",
+                semantic_db_path=storage_root / "semantic.json",
+                procedural_repo_path=storage_root / "procedural",
+            )
+
+            with patch("agi_core.memory.orchestrator.ChromaMemory", side_effect=RuntimeError("boom")):
+                orchestrator = MemoryOrchestrator(config)
+
+            self.assertIsInstance(orchestrator.episodic, EpisodicMemory)
+            self.assertIsInstance(orchestrator.semantic, SemanticMemory)
 
 
 if __name__ == "__main__":  # pragma: no cover - convenience for direct execution
