@@ -19,6 +19,7 @@ class PlanningContext:
 
     goal: str
     memory_snippets: List[str]
+    memory_metadata: List[Dict[str, str]]
     telemetry: Dict[str, float]
     available_tools: Dict[str, str]
     query_embedding: Sequence[float]
@@ -63,6 +64,7 @@ class ContextBuilder:
         embedding = self.embed(goal)
         memories = self._memory.retrieve_relevant(embedding, limit=limit)
         memory_snippets = [record.content for record in memories]
+        memory_metadata = [dict(record.metadata) for record in memories]
         available_tools = {name: tool.description for name, tool in tools.list_tools().items()}
 
         LOGGER.debug(
@@ -72,6 +74,7 @@ class ContextBuilder:
         return PlanningContext(
             goal=goal,
             memory_snippets=memory_snippets,
+            memory_metadata=memory_metadata,
             telemetry=telemetry,
             available_tools=available_tools,
             query_embedding=embedding,

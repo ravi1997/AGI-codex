@@ -163,10 +163,11 @@ class AgentKernel:
         )
 
         outcome_embedding = self.context_builder.embed(summary)
+        semantic_metadata = dict(metadata)
         self.memory.add_semantic(
             content=summary,
             embedding=outcome_embedding,
-            metadata=metadata,
+            metadata=semantic_metadata,
         )
 
         self.feedback.record_run(
