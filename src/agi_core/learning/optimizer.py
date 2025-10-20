@@ -10,6 +10,7 @@ from ..config import LearningConfig
 from ..orchestration.task_scheduler import TaskScheduler
 from .feedback import FeedbackCollector
 from .jobs import TrainingJobRunner
+from .scheduling import ScheduledTrainingTask, schedule_training_if_ready
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,27 +131,25 @@ class SelfOptimizer:
         if sample_count == self._last_training_sample_count:
             return
 
-        command = [
-            "agi-core-train",
-            f"--strategy={self._config.training_strategy}",
-            f"--dataset={dataset_path}",
-        ]
-        description = "Run fine-tuning pipeline on accumulated experience dataset"
-        scheduler.add_task(
-            description,
-            priority=4,
-            metadata={
-                "source": "optimizer",
-                "action": "fine_tune",
-                "command": " ".join(command),
-                "samples": str(sample_count),
-                "threshold": str(threshold),
-            },
-            autonomous=True,
+        decision: ScheduledTrainingTask = schedule_training_if_ready(
+            scheduler,
+            self._config,
+            strategy=self._config.training_strategy,
+            dataset_path=dataset_path,
+            min_samples=threshold,
         )
-        LOGGER.info(
-            "Queued fine-tuning job request with %d samples using %s strategy",
-            sample_count,
-            self._config.training_strategy,
-        )
+
+        if decision.triggered:
+            LOGGER.info(
+                "Queued fine-tuning job request with %d samples using %s strategy",
+                decision.sample_count,
+                self._config.training_strategy,
+            )
+        else:
+            LOGGER.debug(
+                "Training not enqueued despite threshold met (samples=%d, threshold=%d)",
+                decision.sample_count,
+                decision.threshold,
+            )
+
         self._last_training_sample_count = sample_count
