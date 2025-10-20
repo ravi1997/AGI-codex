@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Tuple
 
 from ..config import MemoryConfig
 from .base import MemoryRecord
@@ -116,21 +116,20 @@ class MemoryOrchestrator:
                 records = list(store.all_records())
             candidates.extend(records)
 
-        scored_records = sorted(
-            ((record.similarity(query_embedding), record) for record in candidates),
+        scored_by_content: Dict[str, Tuple[float, MemoryRecord]] = {}
+        for record in candidates:
+            score = record.similarity(query_embedding)
+            existing = scored_by_content.get(record.content)
+            if existing is None or score > existing[0]:
+                scored_by_content[record.content] = (score, record)
+
+        ranked_records = sorted(
+            scored_by_content.values(),
             key=lambda item: item[0],
             reverse=True,
         )
 
-        seen_contents = set()
-        unique: List[MemoryRecord] = []
-        for _, record in scored_records:
-            if record.content in seen_contents:
-                continue
-            seen_contents.add(record.content)
-            unique.append(record)
-            if len(unique) >= limit:
-                break
+        top_records = [record for _, record in ranked_records[:limit]]
 
-        LOGGER.debug("Retrieved %d relevant memories", len(unique))
-        return unique
+        LOGGER.debug("Retrieved %d relevant memories", len(top_records))
+        return top_records
