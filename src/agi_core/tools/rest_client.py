@@ -31,8 +31,8 @@ class RestClientTool(Tool):
 
     name = "rest_client"
     description = (
-        "Send HTTP requests with support for JSON payloads, query parameters,"
-        " and saving responses within the sandbox."
+        "Send HTTP and GraphQL requests with JSON payloads, query parameters,"
+        " and optional sandboxed persistence of responses."
     )
 
     def __init__(
@@ -76,7 +76,8 @@ class RestClientTool(Tool):
         if not url:
             return ToolResult(False, "", "Missing required 'url' field")
 
-        method = str(payload.get("method", "GET")).upper()
+        graphql_payload = payload.get("graphql")
+        method = str(payload.get("method", "POST" if graphql_payload else "GET")).upper()
         if method not in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"}:
             return ToolResult(False, "", f"Unsupported HTTP method: {method}")
 
@@ -86,6 +87,9 @@ class RestClientTool(Tool):
             return ToolResult(False, "", str(exc))
 
         headers = {**self._default_headers, **payload.get("headers", {})}
+        if graphql_payload:
+            headers.setdefault("Content-Type", "application/json")
+
         if self._auth_token and not any(key.lower() == "authorization" for key in headers):
             headers.setdefault("Authorization", self._auth_token)
 
@@ -95,6 +99,18 @@ class RestClientTool(Tool):
             "data": payload.get("data"),
             "timeout": payload.get("timeout", self._timeout),
         }
+
+        if graphql_payload:
+            query = graphql_payload.get("query")
+            if not query:
+                return ToolResult(False, "", "GraphQL payload requires a 'query' field")
+            request_kwargs["json"] = {
+                "query": query,
+                "variables": graphql_payload.get("variables"),
+                "operationName": graphql_payload.get("operation_name"),
+            }
+            request_kwargs["data"] = None
+            method = "POST"
 
         save_path = payload.get("save_to")
         if save_path:
@@ -122,6 +138,7 @@ class RestClientTool(Tool):
             "headers": dict(response.headers),
             "body_preview": content_preview,
             "saved_to": str(destination.relative_to(self._sandbox_root)) if destination else None,
+            "graphql": bool(graphql_payload),
         }
 
         return ToolResult(True, json.dumps(output, indent=2))

@@ -76,10 +76,15 @@ class BrowserToolConfig(BaseModel):
         default_factory=list,
         description="Allow-listed URL prefixes for network navigation when enabled.",
     )
+    backend: Literal["playwright", "selenium"] = Field(
+        "playwright",
+        description="Automation backend to use. Playwright requires playwright browsers;"
+        " selenium requires a compatible WebDriver installation.",
+    )
 
 
 class RestClientConfig(BaseModel):
-    """Settings for the REST client tool."""
+    """Settings for the REST and GraphQL client tool."""
 
     enabled: bool = Field(False, description="Whether the REST client tool is available.")
     default_timeout_sec: float = Field(

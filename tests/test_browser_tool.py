@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 import sys
 from typing import Dict
+import types
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -111,5 +112,97 @@ class BrowserAutomationToolTests(TestCase):
         self.assertIn("Extracted text", result.output)
 
         screenshot_path = self.sandbox / "captures" / "page.png"
+        self.assertTrue(screenshot_path.exists())
+        self.assertGreater(screenshot_path.stat().st_size, 0)
+
+    def test_selenium_backend_extracts_text(self) -> None:
+        tool = BrowserAutomationTool(
+            sandbox_root=self.sandbox,
+            allow_network=False,
+            allowed_origins=[],
+            backend="selenium",
+        )
+
+        payload = {
+            "url": self.html_path.as_uri(),
+            "extract_text": "#body",
+            "screenshot": "captures/selenium.png",
+        }
+
+        html_path = self.html_path
+
+        class FakeChromeOptions:
+            def __init__(self) -> None:
+                self.arguments: list[str] = []
+
+            def add_argument(self, argument: str) -> None:  # pragma: no cover - trivial setter
+                self.arguments.append(argument)
+
+        class FakeElement:
+            def __init__(self, text: str) -> None:
+                self.text = text
+
+            def click(self) -> None:  # pragma: no cover - noop
+                pass
+
+            def clear(self) -> None:  # pragma: no cover - noop
+                pass
+
+            def send_keys(self, value: str) -> None:  # pragma: no cover - noop
+                self.text = value
+
+        class FakeBrowser:
+            def __init__(self) -> None:
+                self._last_url: str | None = None
+
+            def set_page_load_timeout(self, timeout: float) -> None:  # pragma: no cover - noop
+                self._timeout = timeout
+
+            def get(self, url: str) -> None:
+                self._last_url = url
+
+            def find_element(self, by: str, selector: str) -> FakeElement:
+                content = html_path.read_text(encoding="utf-8")
+                return FakeElement("Hello Selenium" if "Hello" in content else selector)
+
+            def save_screenshot(self, path: str) -> None:
+                Path(path).write_bytes(b"selenium-image")
+
+            def quit(self) -> None:  # pragma: no cover - noop
+                pass
+
+        fake_webdriver = types.SimpleNamespace(
+            Chrome=lambda **_: FakeBrowser(),
+            ChromeOptions=FakeChromeOptions,
+        )
+
+        fake_by = types.SimpleNamespace(CSS_SELECTOR="css")
+
+        class FakeWebDriverWait:
+            def __init__(self, *_args, **_kwargs) -> None:
+                pass
+
+            def until(self, method):  # pragma: no cover - unused in this test
+                return method(FakeBrowser())
+
+        fake_ec = types.SimpleNamespace(
+            presence_of_element_located=lambda *_args, **_kwargs: (lambda driver: driver)
+        )
+
+        with patch.multiple(
+            "agi_core.tools.browser",
+            webdriver=fake_webdriver,
+            By=fake_by,
+            WebDriverWait=FakeWebDriverWait,
+            EC=fake_ec,
+            SeleniumTimeoutError=RuntimeError,
+            WebDriverException=RuntimeError,
+        ):
+            result = tool.run(self.context, json.dumps(payload))
+
+        self.assertTrue(result.success, result.error)
+        self.assertIn("Extracted text", result.output)
+
+        screenshot_path = self.sandbox / "captures" / "selenium.png"
         self.assertTrue(screenshot_path.exists())
         self.assertGreater(screenshot_path.stat().st_size, 0)

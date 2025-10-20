@@ -75,6 +75,7 @@ class AgentKernel:
                     allowed_origins=browser_cfg.allowed_origins,
                     headless=browser_cfg.headless,
                     default_timeout_ms=browser_cfg.default_timeout_ms,
+                    backend=browser_cfg.backend,
                 )
             )
 
