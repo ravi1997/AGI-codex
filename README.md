@@ -57,6 +57,9 @@ The Compose stack ships with two configuration profiles:
 
 Select the desired backend by editing the mounted config file before booting the stack.
 
+Additional provisioning tips for both services are documented in
+[`docs/deployment.md`](docs/deployment.md).
+
 ```bash
 # Chroma-backed deployment
 docker compose up --build

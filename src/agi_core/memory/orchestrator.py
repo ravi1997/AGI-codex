@@ -75,15 +75,9 @@ class MemoryOrchestrator:
     @staticmethod
     def _build_vector_store(backend: str, *, collection: str, config: MemoryConfig):
         if backend == "chromadb":
-            return ChromaMemory(connection=config.chroma_connection, collection=collection)
+            return ChromaMemory.from_config(config, collection=collection)
         if backend == "pgvector":
-            return PgVectorMemory(
-                dsn=config.pgvector_dsn,
-                namespace=collection,
-                table=config.pgvector_table,
-                namespace_column=config.pgvector_namespace_column,
-                dimension=config.pgvector_dimension,
-            )
+            return PgVectorMemory.from_config(config, namespace=collection)
         raise ValueError(f"Unsupported vector backend '{backend}'")
 
     def add_episode(self, content: str, embedding: Sequence[float], metadata: Dict[str, str]) -> None:
