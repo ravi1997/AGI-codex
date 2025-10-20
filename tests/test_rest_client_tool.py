@@ -87,6 +87,25 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def do_POST(self):  # type: ignore[override]
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length)
+        try:
+            data = json.loads(body.decode("utf-8")) if body else {}
+        except json.JSONDecodeError:
+            data = {}
+        message = (
+            data.get("variables", {}).get("message")
+            if isinstance(data.get("variables"), dict)
+            else None
+        )
+        payload = json.dumps({"data": {"echo": message}}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def log_message(self, format, *args):  # pragma: no cover - silence server logs
         return
 
@@ -139,3 +158,34 @@ class RestClientToolTests(TestCase):
         self.assertTrue(saved_file.exists())
         saved_payload = json.loads(saved_file.read_text(encoding="utf-8"))
         self.assertEqual(saved_payload["message"], "hello")
+
+    def test_graphql_request(self) -> None:
+        server, thread = _start_server()
+        self.addCleanup(server.shutdown)
+        self.addCleanup(server.server_close)
+        self.addCleanup(lambda: thread.join(timeout=1))
+
+        host, port = server.server_address
+        url = f"http://{host}:{port}/graphql"
+
+        tool = RestClientTool(
+            allow_network=True,
+            allowed_hosts=["127.0.0.1", "localhost"],
+            sandbox_root=self.sandbox,
+        )
+
+        payload = {
+            "url": url,
+            "graphql": {
+                "query": "query Echo($message: String!) { echo(message: $message) }",
+                "variables": {"message": "world"},
+            },
+        }
+
+        result = tool.run(self.context, json.dumps(payload))
+
+        self.assertTrue(result.success, result.error)
+        summary = json.loads(result.output)
+        self.assertTrue(summary["graphql"])
+        self.assertEqual(summary["status_code"], 200)
+        self.assertIn("world", summary["body_preview"])

@@ -22,8 +22,9 @@ trusted tooling.
 
 ## Browser Automation
 
-The `browser_automation` tool wraps [Playwright](https://playwright.dev/) to
-launch a headless Chromium instance. It can read HTML files from within the
+The `browser_automation` tool wraps either
+[Playwright](https://playwright.dev/) or [Selenium](https://www.selenium.dev/)
+to launch a headless Chromium session. It can read HTML files from within the
 sandbox, interact with simple selectors, extract text, and capture full-page
 screenshots.
 
@@ -34,6 +35,7 @@ tools:
   browser:
     enabled: true
     headless: true
+    backend: "playwright"  # or "selenium"
     default_timeout_ms: 10000
     allowed_origins:
       - "https://example.internal/"
@@ -41,6 +43,8 @@ tools:
 
 - `enabled`: toggles registration in the tool registry.
 - `headless`: controls whether Chromium is launched without a GUI.
+- `backend`: selects the automation backend. The Selenium backend requires a
+  compatible WebDriver binary to be installed and on the `PATH`.
 - `default_timeout_ms`: per-operation timeout passed to Playwright.
 - `allowed_origins`: optional allow-list of URL prefixes when navigating over
   HTTP/HTTPS. File URLs are always restricted to the sandbox directory.
@@ -101,9 +105,22 @@ Example invocation payload:
 }
 ```
 
+GraphQL operations can be expressed through the `graphql` key. A `POST` request
+is issued automatically and the payload is encoded as JSON:
+
+```json
+{
+  "url": "http://127.0.0.1:8000/graphql",
+  "graphql": {
+    "query": "query Echo($message: String!) { echo(message: $message) }",
+    "variables": {"message": "hello"}
+  }
+}
+```
+
 The tool emits a JSON-encoded summary containing the status code, response
-headers, the first 4KB of the body, and the sandbox-relative path of any saved
-artifact.
+headers, the first 4KB of the body, whether the request was GraphQL-enabled,
+and the sandbox-relative path of any saved artifact.
 
 ## Planner Context
 

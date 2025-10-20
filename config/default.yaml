@@ -19,6 +19,7 @@ tools:
     headless: true
     default_timeout_ms: 10000
     allowed_origins: []
+    backend: "playwright"
   rest:
     enabled: false
     default_timeout_sec: 10.0
