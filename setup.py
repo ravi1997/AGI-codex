@@ -24,6 +24,7 @@ setup(
         "aiohttp>=3.9.0",
         "feedparser>=6.0",
         "beautifulsoup4>=4.12.0",
+        "cryptography>=42.0.0",
     ],
     extras_require={
         "dev": ["pytest>=7.4"],

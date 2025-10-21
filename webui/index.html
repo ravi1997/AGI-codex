@@ -2,10 +2,129 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>AGI Core Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AGI Core Chat</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b0c10; color:#e5e7eb; }
+      header { padding: 12px 16px; border-bottom:1px solid #1f2937; position:sticky; top:0; background:#0b0c10; }
+      main { max-width: 900px; margin: 0 auto; padding: 16px; }
+      #log { background:#111827; border:1px solid #1f2937; border-radius:8px; padding:12px; height: 50vh; overflow-y: auto; }
+      .msg { margin: 8px 0; }
+      .user { color:#93c5fd; }
+      .agent { color:#86efac; }
+      form { display:flex; gap:8px; margin-top:12px; }
+      input[type="text"] { flex:1; padding:10px; border-radius:6px; border:1px solid #374151; background:#0f172a; color:#e5e7eb; }
+      button { padding:10px 12px; border:1px solid #374151; background:#111827; color:#e5e7eb; border-radius:6px; cursor:pointer; }
+      button:hover { background:#0f172a; }
+      .controls { display:flex; gap:8px; margin-top:8px; align-items:center; }
+      .status { font-size:12px; color:#9ca3af; }
+    </style>
   </head>
   <body>
-    <h1>AGI Core Dashboard</h1>
-    <p>Phase 1 placeholder UI. Future iterations will show telemetry and task queue.</p>
+    <header>
+      <strong>AGI Core Chat</strong>
+      <span class="status" id="status">disconnected</span>
+    </header>
+    <main>
+      <div id="log" aria-live="polite"></div>
+      <form id="form">
+        <input id="input" type="text" placeholder="Type a message and press Enter" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+      <div class="controls">
+        <button id="mic">🎤 Start Mic</button>
+        <button id="tts">🔊 Read Last</button>
+      </div>
+    </main>
+    <script>
+      const log = document.getElementById('log');
+      const form = document.getElementById('form');
+      const input = document.getElementById('input');
+      const micBtn = document.getElementById('mic');
+      const ttsBtn = document.getElementById('tts');
+      const statusEl = document.getElementById('status');
+      let lastAgentText = '';
+
+      function appendMsg(text, cls) {
+        const div = document.createElement('div');
+        div.className = `msg ${cls}`;
+        div.textContent = text;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function connect() {
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${proto}://${location.host}/ws`);
+        ws.onopen = () => { statusEl.textContent = 'connected'; };
+        ws.onclose = () => { statusEl.textContent = 'disconnected'; setTimeout(connect, 2000); };
+        ws.onerror = () => { statusEl.textContent = 'error'; };
+        ws.onmessage = (ev) => {
+          try {
+            const data = JSON.parse(ev.data);
+            if (data.summary) {
+              lastAgentText = data.summary;
+              appendMsg(`Agent: ${data.summary}`, 'agent');
+              if (window.speechSynthesis && lastAgentText) {
+                const utter = new SpeechSynthesisUtterance(lastAgentText);
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utter);
+              }
+            }
+          } catch (e) {
+            appendMsg(`Agent: ${ev.data}`, 'agent');
+          }
+        };
+
+        form.onsubmit = (e) => {
+          e.preventDefault();
+          const text = input.value.trim();
+          if (!text) return;
+          appendMsg(`You: ${text}`, 'user');
+          ws.send(JSON.stringify({ message: text }));
+          input.value = '';
+        };
+
+        return ws;
+      }
+
+      let ws = connect();
+
+      // Mic input using Web Speech API (if available)
+      let recognizing = false;
+      let recognition;
+      if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = navigator.language || 'en-US';
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          input.value = transcript;
+          form.requestSubmit();
+        };
+        recognition.onerror = (e) => {
+          recognizing = false; micBtn.textContent = '🎤 Start Mic';
+        };
+        recognition.onend = () => { recognizing = false; micBtn.textContent = '🎤 Start Mic'; };
+      }
+
+      micBtn.onclick = () => {
+        if (!recognition) {
+          alert('Speech recognition not supported in this browser.');
+          return;
+        }
+        if (!recognizing) { recognizing = true; recognition.start(); micBtn.textContent = '⏹ Stop Mic'; }
+        else { recognition.stop(); recognizing = false; micBtn.textContent = '🎤 Start Mic'; }
+      };
+
+      ttsBtn.onclick = () => {
+        if (window.speechSynthesis && lastAgentText) {
+          const utter = new SpeechSynthesisUtterance(lastAgentText);
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utter);
+        }
+      };
+    </script>
   </body>
-</html>
+  </html>

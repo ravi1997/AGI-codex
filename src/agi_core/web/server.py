@@ -8,7 +8,6 @@ from typing import Optional
 
 from aiohttp import web, WSMsgType
 
-from ..app import main as _unused  # ensure package context
 from ..config import AgentConfig
 from ..orchestration.agent_kernel import AgentKernel
 

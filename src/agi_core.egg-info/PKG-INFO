@@ -11,6 +11,10 @@ Requires-Dist: PyYAML>=6.0
 Requires-Dist: psutil>=5.9
 Requires-Dist: requests>=2.31
 Requires-Dist: playwright>=1.40
+Requires-Dist: aiohttp>=3.9.0
+Requires-Dist: feedparser>=6.0
+Requires-Dist: beautifulsoup4>=4.12.0
+Requires-Dist: cryptography>=42.0.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.4; extra == "dev"
 Provides-Extra: vector
