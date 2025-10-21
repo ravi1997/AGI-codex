@@ -1,0 +1,75 @@
+memory:
+  vector_backend: "chromadb"
+  vector_episodic_collection: "agi_episodic_personalized"
+  vector_semantic_collection: "agi_semantic_personalized"
+  chroma_connection: "http://localhost:8000"
+  pgvector_dsn: "postgresql://agi:agi@localhost:5432/agi_memory_personalized"
+ pgvector_table: "memory_records_personalized"
+  pgvector_namespace_column: "namespace"
+  pgvector_dimension: 1536
+  episodic_db_path: "storage/episodic/personalized_memory.json"
+  semantic_db_path: "storage/semantic/personalized_knowledge.json"
+  procedural_repo_path: "storage/procedural/personalized"
+tools:
+  sandbox_root: "sandbox/personalized"
+ allow_network: false
+  network_allowlist: []
+  browser:
+    enabled: true
+    headless: false
+    default_timeout_ms: 15000
+    allowed_origins: ["*"]
+    backend: "playwright"
+  rest:
+    enabled: true
+    default_timeout_sec: 15.0
+    allowed_hosts:
+      - "127.0.0.1"
+      - "localhost"
+      - "*.local"
+      - "api.github.com"
+      - "api.openai.com"
+    default_headers: {}
+    auth_token: null
+scheduler:
+  max_concurrent_tasks: 2
+  autonomous_task_interval_sec: 900
+  idle_sleep_seconds: 0.5
+logging:
+  level: "DEBUG"
+  log_dir: "logs/personalized"
+learning:
+  feedback_path: "storage/analytics/personalized_feedback.json"
+  max_feedback_history: 500
+  dataset_path: "storage/learning/personalized_dataset.jsonl"
+  dataset_flush_batch: 3
+  min_samples_for_optimization: 5
+  min_samples_for_training: 25
+  success_rate_floor: 0.7
+  success_rate_ceiling: 0.85
+  optimizer_cooldown: 3
+  min_autonomous_interval_sec: 120
+  max_autonomous_interval_sec: 1800
+  telemetry_cpu_threshold: 75.0
+  telemetry_memory_threshold_mb: 768.0
+ training_strategy: "lora"
+  training_base_model: "gpt2-medium"
+  training_output_dir: "storage/learning/personalized_models"
+  training_metadata_path: "storage/learning/personalized_models/latest.json"
+  training_overrides_path: "config/personalized_overrides.yaml"
+  training_epochs: 2
+  max_train_steps: 500
+  learning_rate: 1e-4
+  lora_rank: 16
+  dpo_beta: 0.2
+  # Personalization-specific settings
+  interaction_tracking_enabled: true
+  workflow_pattern_tracking: true
+  user_preference_learning: true
+ adaptation_mechanisms_enabled: true
+  context_awareness_enabled: true
+  personalized_planning_enabled: true
+  safety_enhanced_execution: true
+logging:
+  level: "DEBUG"
+  log_dir: "logs/personalized"

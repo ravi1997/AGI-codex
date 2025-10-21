@@ -1,0 +1,66 @@
+# Internet Learning Configuration for AGI Codex
+
+internet_learning:
+  enabled: true
+ learning_cycle_interval: 3600 # 1 hour in seconds
+  max_content_size_kb: 5000
+  request_timeout_seconds: 30
+  max_concurrent_requests: 5
+  
+  # RSS feeds to monitor
+  rss_feeds:
+    - "https://huggingface.co/blog/feed.xml"
+    - "https://openai.com/blog/rss/"
+    - "https://ai.googleblog.com/feeds/posts/default"
+    - "https://distill.pub/rss.xml"
+    - "https://stability.ai/news/rss"
+    - "https://www.anthropic.com/api/news/rss"
+  
+  # Documentation sites to monitor
+  documentation_sites:
+    - "https://docs.python.org/3/"
+    - "https://pytorch.org/docs/stable/"
+    - "https://docs.anthropic.com/"
+    - "https://platform.openai.com/docs/"
+    - "https://docs.mistral.ai/"
+    - "https://api-cohere.streamlit.app/"
+  
+  # Security settings
+ security:
+    allowed_domains:
+      - "*.github.com"
+      - "*.wikipedia.org"
+      - "*.openai.com"
+      - "*.anthropic.com"
+      - "*.google.com"
+      - "*.microsoft.com"
+      - "*.huggingface.co"
+      - "*.pytorch.org"
+      - "*.tensorflow.org"
+      - "*.stability.ai"
+      - "*.mistral.ai"
+      - "*.cohere.ai"
+    blocked_domains:
+      - "*.torrent.*"
+      - "*.piracy.*"
+      - "*.malware.*"
+      - "*.phishing.*"
+    content_filters:
+      - "malware"
+      - "phishing"
+      - "scam"
+      - "inappropriate"
+  
+  # Learning settings
+  learning:
+    relevance_threshold: 0.7
+    content_summary_enabled: true
+    content_summary_length: 500
+    duplicate_detection_window_hours: 24
+    knowledge_retention_days: 30
+  
+  # Storage settings
+  storage:
+    max_entries: 10000
+    cleanup_enabled: true
+    cleanup_interval_hours: 24

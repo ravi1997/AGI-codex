@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
-from .base import Tool, ToolContext, ToolResult
+from .base import BaseTool, ToolContext, ToolResult, ToolError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,13 +59,8 @@ class TerminalNetworkPolicy:
         return cls(True, cls._normalize(allowlist or []), frozenset())
 
 
-class TerminalTool(Tool):
+class TerminalTool(BaseTool):
     """Executes shell commands within a sandbox."""
-
-    name = "terminal.run"
-    description = "Execute shell commands inside the configured sandbox directory."
-
-    NETWORK_COMMANDS = DEFAULT_NETWORK_BINARIES
 
     def __init__(
         self,
@@ -76,6 +71,7 @@ class TerminalTool(Tool):
         network_allowlist: Sequence[str] | None = None,
         allowed_binaries: Sequence[str] | None = None,
     ) -> None:
+        super().__init__("terminal.run", "Execute shell commands inside the configured sandbox directory.")
         self._sandbox_root = sandbox_root.resolve()
         self._sandbox_root.mkdir(parents=True, exist_ok=True)
         if network_policy is None:
@@ -88,32 +84,35 @@ class TerminalTool(Tool):
         self._allowed_binaries = {
             Path(binary).name for binary in (allowed_binaries or [])
         }
+        self.NETWORK_COMMANDS = DEFAULT_NETWORK_BINARIES
 
-    def run(self, context: ToolContext, *args: str, **kwargs: str) -> ToolResult:
+    def _run(self, *args: str, **kwargs: str) -> str:
         command = " ".join(args)
+        if 'working_dir' in kwargs:
+            working_dir = Path(kwargs['working_dir']).resolve()
+        else:
+            # Default to current directory or sandbox root
+            working_dir = self._sandbox_root
+            
         LOGGER.info("Executing command: %s", command)
-        working_dir = Path(context.working_directory).resolve()
+        
         if not str(working_dir).startswith(str(self._sandbox_root)):
-            return ToolResult(success=False, output="", error="Working directory outside sandbox")
+            raise ToolError("Working directory outside sandbox")
 
         if not command:
-            return ToolResult(success=False, output="", error="No command provided")
+            raise ToolError("No command provided")
 
         parts = shlex.split(command)
         base_command = Path(parts[0]).name
 
         if self._allowed_binaries and base_command not in self._allowed_binaries:
-            return ToolResult(success=False, output="", error="Command not allowed")
+            raise ToolError("Command not allowed")
 
         policy = self._network_policy
         if not policy.allow_network and base_command in (
             policy.denylist or self.NETWORK_COMMANDS
         ):
-            return ToolResult(
-                success=False,
-                output="",
-                error="Networking commands are disabled by configuration",
-            )
+            raise ToolError("Networking commands are disabled by configuration")
 
         if (
             policy.allow_network
@@ -121,11 +120,7 @@ class TerminalTool(Tool):
             and base_command in self.NETWORK_COMMANDS
             and base_command not in policy.allowlist
         ):
-            return ToolResult(
-                success=False,
-                output="",
-                error="Networking command not allowed by allowlist",
-            )
+            raise ToolError("Networking command not allowed by allowlist")
 
         try:
             process = subprocess.run(
@@ -137,13 +132,14 @@ class TerminalTool(Tool):
             )
         except OSError as exc:
             LOGGER.exception("Failed to execute command")
-            return ToolResult(success=False, output="", error=str(exc))
+            raise ToolError(str(exc))
 
         success = process.returncode == 0
         output = process.stdout.strip()
         error_output = process.stderr.strip() or None
         if success:
             LOGGER.debug("Command succeeded: %s", output)
+            return output
         else:
             LOGGER.warning("Command failed (%s): %s", process.returncode, error_output)
-        return ToolResult(success=success, output=output, error=error_output)
+            raise ToolError(f"Command failed with return code {process.returncode}: {error_output}")

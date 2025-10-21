@@ -1,20 +1,35 @@
-"""Tool implementations packaged with agi_core."""
-
-from .base import Tool, ToolContext, ToolRegistry, ToolResult
-from .browser import BrowserAutomationTool
-from .file_io import FileIOTool
-from .rest_client import RestClientTool
-from .system_monitor import SystemMonitorTool
+"""
+AGI Core Tools Package
+"""
+from .base import BaseTool, ToolError
 from .terminal import TerminalTool
+from .file_io import FileIOTool as FileTool
+from .browser import BrowserAutomationTool as BrowserTool
+from .rest_client import RestClientTool as RestTool
+from .system_monitor import SystemMonitorTool
+from .system_integration import (
+    ApplicationDiscoveryTool,
+    FileSystemIntegrationTool,
+    TerminalIntegrationTool,
+    SystemResourceMonitor,
+    WebIntegrationTool,
+    APIIntegrationTool,
+    PluginManager
+)
 
 __all__ = [
-    "Tool",
-    "ToolContext",
-    "ToolRegistry",
-    "ToolResult",
-    "BrowserAutomationTool",
-    "FileIOTool",
-    "RestClientTool",
-    "SystemMonitorTool",
+    "BaseTool",
+    "ToolError",
     "TerminalTool",
+    "FileTool",
+    "BrowserTool",
+    "RestTool",
+    "SystemMonitorTool",
+    "ApplicationDiscoveryTool",
+    "FileSystemIntegrationTool",
+    "TerminalIntegrationTool",
+    "SystemResourceMonitor",
+    "WebIntegrationTool",
+    "APIIntegrationTool",
+    "PluginManager"
 ]

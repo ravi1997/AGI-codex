@@ -11,6 +11,13 @@ from .procedural import ProceduralMemory
 from .semantic import SemanticMemory
 from .vector_chroma import ChromaMemory
 from .vector_pg import PgVectorMemory
+from .enhanced_episodic import EnhancedEpisodicMemory
+from .enhanced_semantic import EnhancedSemanticMemory
+from .enhanced_procedural import EnhancedProceduralMemory
+from .workflow_tracker import WorkflowTracker
+from .pattern_recognizer import PatternRecognizer
+from .consolidation import MemoryConsolidator
+from .user_context_manager import UserContextManager
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,10 +28,11 @@ class MemoryOrchestrator:
     def __init__(self, config: MemoryConfig) -> None:
         backend = (config.vector_backend or "").strip().lower()
 
+        # Initialize enhanced memory systems
         self.episodic = self._build_store(
             backend,
             store_name="episodic",
-            default_factory=lambda: EpisodicMemory(config.episodic_db_path),
+            default_factory=lambda: EnhancedEpisodicMemory(config.episodic_db_path),
             vector_factory=lambda: self._build_vector_store(
                 backend,
                 collection=config.vector_episodic_collection,
@@ -34,14 +42,45 @@ class MemoryOrchestrator:
         self.semantic = self._build_store(
             backend,
             store_name="semantic",
-            default_factory=lambda: SemanticMemory(config.semantic_db_path),
+            default_factory=lambda: EnhancedSemanticMemory(config.semantic_db_path),
             vector_factory=lambda: self._build_vector_store(
                 backend,
                 collection=config.vector_semantic_collection,
                 config=config,
             ),
         )
-        self.procedural = ProceduralMemory(config.procedural_repo_path)
+        self.procedural = EnhancedProceduralMemory(config.procedural_repo_path)
+        
+        # Initialize new workflow tracking components
+        self.workflow_tracker = WorkflowTracker(
+            config.workflow_tracking_path,
+            self.semantic,
+            self.procedural
+        )
+        self.pattern_recognizer = PatternRecognizer(
+            self.workflow_tracker,
+            self.episodic,
+            self.semantic,
+            self.procedural
+        )
+        self.memory_consolidator = MemoryConsolidator(
+            config.consolidation_config,
+            self.episodic,
+            self.semantic,
+            self.procedural,
+            self.workflow_tracker,
+            self.pattern_recognizer
+        )
+        self.user_context_manager = UserContextManager(
+            config.context_manager_path,
+            self.semantic,
+            self.episodic,
+            self.workflow_tracker,
+            self.memory_consolidator
+        )
+        
+        # Start consolidation service
+        self.memory_consolidator.start_consolidation_service()
 
     def _build_store(
         self,

@@ -1,0 +1,124 @@
+# System Integration Configuration for AGI Codex
+
+# Application Discovery Settings
+application_discovery:
+  enabled: true
+ scan_paths:
+    - "/usr/bin"
+    - "/usr/local/bin"
+    - "/snap/bin"
+    - "/Applications"
+    - "C:\\Program Files"
+    - "C:\\Program Files (x86)"
+  allowed_extensions:
+    - ".app"
+    - ".exe"
+    - ""  # For Unix executables without extensions
+
+# File System Integration Settings
+file_system_integration:
+  enabled: true
+ allowed_directories:
+    - "~/Documents"
+    - "~/Downloads"
+    - "~/Desktop"
+    - "~/Projects"
+    - "/tmp"
+  max_file_size_mb: 100
+  allowed_file_operations:
+    - "read"
+    - "write"
+    - "copy"
+    - "move"
+    - "delete"
+
+# Terminal Integration Settings
+terminal_integration:
+ enabled: true
+ allowed_commands:
+    - "ls"
+    - "dir"
+    - "cat"
+    - "head"
+    - "tail"
+    - "grep"
+    - "find"
+    - "ps"
+    - "top"
+    - "htop"
+    - "df"
+    - "du"
+    - "free"
+    - "uname"
+    - "whoami"
+    - "date"
+    - "echo"
+    - "pwd"
+    - "cd"
+    - "mkdir"
+    - "rmdir"
+    - "cp"
+    - "mv"
+    - "rm"
+    - "touch"
+    - "chmod"
+    - "chown"
+  blocked_patterns:
+    - "rm -rf /"
+    - "rm -rf ~/"
+    - "dd if="
+    - "mkfs."
+    - "format"
+    - "/dev/sd"
+  max_execution_time: 60
+
+# System Resource Monitor Settings
+system_monitor:
+  enabled: true
+  collection_interval_seconds: 30
+  cpu_threshold_percent: 80
+  memory_threshold_percent: 80
+  disk_threshold_percent: 90
+
+# Web Integration Settings
+web_integration:
+  enabled: true
+  allowed_domains:
+    - "*.github.com"
+    - "*.wikipedia.org"
+    - "*.google.com"
+    - "*.openai.com"
+    - "*.microsoft.com"
+    - "*.apple.com"
+    - "*.amazon.com"
+    - "*.reddit.com"
+    - "*.stackoverflow.com"
+    - "*.youtube.com"
+  blocked_domains:
+    - "*.torrent.*"
+    - "*.piracy.*"
+    - "*.malware.*"
+  max_page_size_kb: 5000
+  request_timeout_seconds: 10
+
+# API Integration Settings
+api_integration:
+  enabled: true
+  rate_limit_requests_per_minute: 60
+  allowed_endpoints:
+    - "https://api.github.com/*"
+    - "https://api.openai.com/*"
+    - "https://www.googleapis.com/*"
+    - "https://graph.microsoft.com/*"
+  blocked_endpoints:
+    - "http://*"  # Block non-HTTPS by default
+  max_request_size_kb: 100
+
+# Plugin Manager Settings
+plugin_manager:
+  enabled: true
+  allowed_directories:
+    - "./plugins"
+    - "~/agi-plugins"
+  auto_reload: true
+  security_validation: true

@@ -5,22 +5,19 @@ import json
 import logging
 
 from ..system.telemetry import TelemetryCollector
-from .base import Tool, ToolContext, ToolResult
+from .base import BaseTool, ToolContext, ToolResult, ToolError
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SystemMonitorTool(Tool):
+class SystemMonitorTool(BaseTool):
     """Expose telemetry metrics as a callable tool."""
 
-    name = "system.monitor"
-    description = "Return a JSON payload containing the latest telemetry snapshot."
-
     def __init__(self, telemetry: TelemetryCollector) -> None:
+        super().__init__("system.monitor", "Return a JSON payload containing the latest telemetry snapshot.")
         self._telemetry = telemetry
 
-    def run(self, context: ToolContext, *args: str, **kwargs: str) -> ToolResult:
+    def _run(self, *args: str, **kwargs: str) -> str:
         LOGGER.debug("Collecting telemetry via tool")
         metrics = self._telemetry.snapshot()
-        payload = json.dumps(metrics, indent=2)
-        return ToolResult(success=True, output=payload)
+        return json.dumps(metrics, indent=2)

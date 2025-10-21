@@ -21,19 +21,13 @@ RequestException = (
     requests.RequestException if requests is not None else _RequestException
 )
 
-from .base import Tool, ToolContext, ToolResult
+from .base import BaseTool, ToolContext, ToolResult, ToolError
 
 LOGGER = logging.getLogger(__name__)
 
 
-class RestClientTool(Tool):
+class RestClientTool(BaseTool):
     """Perform HTTP requests with sandbox-aware restrictions."""
-
-    name = "rest_client"
-    description = (
-        "Send HTTP and GraphQL requests with JSON payloads, query parameters,"
-        " and optional sandboxed persistence of responses."
-    )
 
     def __init__(
         self,
@@ -45,6 +39,10 @@ class RestClientTool(Tool):
         default_timeout: float = 10.0,
         sandbox_root: Path,
     ) -> None:
+        super().__init__("rest_client", (
+            "Send HTTP and GraphQL requests with JSON payloads, query parameters,"
+            " and optional sandboxed persistence of responses."
+        ))
         self._allow_network = allow_network
         self._allowed_hosts = {host.lower() for host in allowed_hosts}
         self._default_headers = dict(default_headers or {})
@@ -53,38 +51,36 @@ class RestClientTool(Tool):
         self._sandbox_root = Path(sandbox_root).resolve()
 
     # ------------------------------------------------------------------
-    def run(self, context: ToolContext, *args: str, **_: str) -> ToolResult:
+    def _run(self, *args: str, **kwargs: str) -> str:
         if requests is None:
-            return ToolResult(
-                False,
-                "",
-                "The requests package is not installed; install it to enable REST access.",
+            raise ToolError(
+                "The requests package is not installed; install it to enable REST access."
             )
 
         if not self._allow_network:
-            return ToolResult(False, "", "Network access is disabled for REST client")
+            raise ToolError("Network access is disabled for REST client")
 
         if not args:
-            return ToolResult(False, "", "REST client expects a JSON instruction")
+            raise ToolError("REST client expects a JSON instruction")
 
         try:
             payload = json.loads(args[0])
         except json.JSONDecodeError as exc:
-            return ToolResult(False, "", f"Invalid REST instruction JSON: {exc}")
+            raise ToolError(f"Invalid REST instruction JSON: {exc}")
 
         url = payload.get("url")
         if not url:
-            return ToolResult(False, "", "Missing required 'url' field")
+            raise ToolError("Missing required 'url' field")
 
         graphql_payload = payload.get("graphql")
         method = str(payload.get("method", "POST" if graphql_payload else "GET")).upper()
         if method not in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"}:
-            return ToolResult(False, "", f"Unsupported HTTP method: {method}")
+            raise ToolError(f"Unsupported HTTP method: {method}")
 
         try:
             self._validate_url(url)
         except ValueError as exc:
-            return ToolResult(False, "", str(exc))
+            raise ToolError(str(exc))
 
         headers = {**self._default_headers, **payload.get("headers", {})}
         if graphql_payload:
@@ -103,7 +99,7 @@ class RestClientTool(Tool):
         if graphql_payload:
             query = graphql_payload.get("query")
             if not query:
-                return ToolResult(False, "", "GraphQL payload requires a 'query' field")
+                raise ToolError("GraphQL payload requires a 'query' field")
             request_kwargs["json"] = {
                 "query": query,
                 "variables": graphql_payload.get("variables"),
@@ -117,14 +113,14 @@ class RestClientTool(Tool):
             try:
                 destination = self._resolve_path(Path(save_path))
             except ValueError as exc:
-                return ToolResult(False, "", str(exc))
+                raise ToolError(str(exc))
         else:
             destination = None
 
         try:
             response = requests.request(method, url, headers=headers, **request_kwargs)
         except RequestException as exc:
-            return ToolResult(False, "", f"Request failed: {exc}")
+            raise ToolError(f"Request failed: {exc}")
 
         content_preview = response.text[:4000]
 
@@ -141,7 +137,7 @@ class RestClientTool(Tool):
             "graphql": bool(graphql_payload),
         }
 
-        return ToolResult(True, json.dumps(output, indent=2))
+        return json.dumps(output, indent=2)
 
     # ------------------------------------------------------------------
     def _validate_url(self, url: str) -> None:

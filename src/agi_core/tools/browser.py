@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 from urllib.parse import urlparse
 
-from .base import Tool, ToolContext, ToolResult
+from .base import BaseTool, ToolContext, ToolResult, ToolError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,15 +46,8 @@ class BrowserAction:
     value: Optional[str] = None
 
 
-class BrowserAutomationTool(Tool):
+class BrowserAutomationTool(BaseTool):
     """Execute simple headless browser workflows via Playwright or Selenium."""
-
-    name = "browser_automation"
-    description = (
-        "Automate a browser session using Playwright or Selenium to navigate"
-        " sandboxed content, perform limited interactions, capture"
-        " screenshots, and extract text."
-    )
 
     def __init__(
         self,
@@ -66,6 +59,11 @@ class BrowserAutomationTool(Tool):
         default_timeout_ms: int = 10_000,
         backend: str = "playwright",
     ) -> None:
+        super().__init__("browser_automation", (
+            "Automate a browser session using Playwright or Selenium to navigate"
+            " sandboxed content, perform limited interactions, capture"
+            " screenshots, and extract text."
+        ))
         self._sandbox_root = Path(sandbox_root).resolve()
         self._allow_network = allow_network
         self._allowed_origins: List[str] = list(allowed_origins)
@@ -74,23 +72,23 @@ class BrowserAutomationTool(Tool):
         self._backend = backend.lower()
 
     # ------------------------------------------------------------------
-    def run(self, context: ToolContext, *args: str, **_: str) -> ToolResult:
+    def _run(self, *args: str, **kwargs: str) -> str:
         if not args:
-            return ToolResult(False, "", "Browser instructions must be supplied as JSON")
+            raise ToolError("Browser instructions must be supplied as JSON")
 
         try:
             payload = json.loads(args[0])
         except json.JSONDecodeError as exc:
-            return ToolResult(False, "", f"Invalid browser instruction JSON: {exc}")
+            raise ToolError(f"Invalid browser instruction JSON: {exc}")
 
         url = payload.get("url")
         if not url:
-            return ToolResult(False, "", "Missing required 'url' field")
+            raise ToolError("Missing required 'url' field")
 
         try:
             normalized_url = self._validate_url(url)
         except ValueError as exc:
-            return ToolResult(False, "", str(exc))
+            raise ToolError(str(exc))
 
         wait_for = payload.get("wait_for_selector")
         extract_selector = payload.get("extract_text")
@@ -98,7 +96,7 @@ class BrowserAutomationTool(Tool):
         try:
             actions = [BrowserAction(**item) for item in payload.get("actions", [])]
         except TypeError as exc:
-            return ToolResult(False, "", f"Invalid browser action payload: {exc}")
+            raise ToolError(f"Invalid browser action payload: {exc}")
 
         screenshot_target: Optional[Path] = None
         if screenshot_path:
@@ -107,23 +105,28 @@ class BrowserAutomationTool(Tool):
         LOGGER.info("Running browser automation (%s) against %s", self._backend, normalized_url)
 
         if self._backend == "playwright":
-            return self._run_playwright(
+            result = self._run_playwright(
                 normalized_url,
                 wait_for,
                 extract_selector,
                 screenshot_target,
                 actions,
             )
-        if self._backend == "selenium":
-            return self._run_selenium(
+        elif self._backend == "selenium":
+            result = self._run_selenium(
                 normalized_url,
                 wait_for,
                 extract_selector,
                 screenshot_target,
                 actions,
             )
+        else:
+            raise ToolError(f"Unknown browser backend: {self._backend}")
 
-        return ToolResult(False, "", f"Unknown browser backend: {self._backend}")
+        if not result.success:
+            raise ToolError(result.error or "Unknown error")
+        
+        return result.output
 
     # ------------------------------------------------------------------
     def _run_playwright(

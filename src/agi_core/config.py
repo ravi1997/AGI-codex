@@ -8,6 +8,51 @@ from typing import Any, Dict, List, Literal, Optional
 import yaml
 from pydantic import BaseModel, Field
 
+from .security.config import SecurityConfig
+
+
+class SystemIntegrationConfig(BaseModel):
+    """Configuration for system integration tools."""
+    
+    application_discovery: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for application discovery and integration."
+    )
+    file_system_integration: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for file system integration."
+    )
+    terminal_integration: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for terminal command integration."
+    )
+    system_monitor: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for system resource monitoring."
+    )
+    web_integration: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for web browser integration."
+    )
+    api_integration: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for API integration with services."
+    )
+    plugin_manager: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Settings for plugin management."
+    )
+
+
+class MemoryConsolidationConfig(BaseModel):
+    """Configuration for memory consolidation processes."""
+    
+    consolidation_interval_hours: int = 24
+    retention_days: int = 365
+    summary_retention_days: int = 730  # Longer for summaries (2 years)
+    min_frequency_for_retention: int = 2
+    max_memory_size_mb: int = 100
+
 
 class MemoryConfig(BaseModel):
     """Settings for memory backends."""
@@ -59,6 +104,16 @@ class MemoryConfig(BaseModel):
     )
     procedural_repo_path: Path = Field(
         Path("storage/procedural"), description="Directory containing procedural artifacts."
+    )
+    workflow_tracking_path: Path = Field(
+        Path("storage/workflow_tracking"), description="Directory for workflow tracking data."
+    )
+    context_manager_path: Path = Field(
+        Path("storage/context_manager"), description="Directory for context manager data."
+    )
+    consolidation_config: MemoryConsolidationConfig = Field(
+        default_factory=MemoryConsolidationConfig,
+        description="Configuration for memory consolidation processes."
     )
 
 
@@ -221,6 +276,35 @@ class LearningConfig(BaseModel):
         None,
         description="Path to the most recently produced adapter artifact ready for loading.",
     )
+    # Personalization-specific settings
+    interaction_tracking_enabled: bool = Field(
+        True,
+        description="Enable tracking of user interactions for personalization"
+    )
+    workflow_pattern_tracking: bool = Field(
+        True,
+        description="Enable tracking of workflow patterns for adaptation"
+    )
+    user_preference_learning: bool = Field(
+        True,
+        description="Enable learning from user preferences"
+    )
+    adaptation_mechanisms_enabled: bool = Field(
+        True,
+        description="Enable adaptation mechanisms based on learned patterns"
+    )
+    context_awareness_enabled: bool = Field(
+        True,
+        description="Enable context awareness for personalization"
+    )
+    personalized_planning_enabled: bool = Field(
+        True,
+        description="Enable personalized planning"
+    )
+    safety_enhanced_execution: bool = Field(
+        True,
+        description="Enable safety-enhanced execution for autonomous operations"
+    )
 
 
 class AgentConfig(BaseModel):
@@ -231,6 +315,8 @@ class AgentConfig(BaseModel):
     scheduler: SchedulerConfig = SchedulerConfig()
     logging: LoggingConfig = LoggingConfig()
     learning: LearningConfig = LearningConfig()
+    security: SecurityConfig = SecurityConfig()
+    system_integration: SystemIntegrationConfig = SystemIntegrationConfig()
 
     class Config:
         arbitrary_types_allowed = True
@@ -249,7 +335,7 @@ def load_config(path: Optional[os.PathLike[str]] = None) -> AgentConfig:
 
     project_root = Path(__file__).resolve().parents[2]
     default_path = project_root / "config" / "default.yaml"
-    config_path = Path(path) if path else default_path
+    config_path = project_root / Path(path) if path else default_path
 
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")

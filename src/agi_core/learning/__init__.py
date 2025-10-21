@@ -5,6 +5,7 @@ from .optimizer import SelfOptimizer
 from .pipeline import LearningPipeline
 from .scheduling import ScheduledTrainingTask, schedule_training_if_ready
 from .trainer import FineTuningPipeline, TrainingResult
+from .internet_learning import InternetLearningEngine, RealTimeLearningManager
 
 __all__ = [
     "FeedbackCollector",
@@ -16,4 +17,6 @@ __all__ = [
     "TrainingJobStatus",
     "ScheduledTrainingTask",
     "schedule_training_if_ready",
+    "InternetLearningEngine",
+    "RealTimeLearningManager"
 ]

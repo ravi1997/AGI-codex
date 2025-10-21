@@ -12,12 +12,12 @@ memory:
   procedural_repo_path: "storage/procedural"
 tools:
   sandbox_root: "sandbox"
-  allow_network: false # When false, TerminalTool blocks common networking binaries (curl, wget, etc.).
+  allow_network: false  # When false, TerminalTool blocks common networking binaries (curl, wget, etc.).
   network_allowlist: []  # When true, restricts which networking binaries are permitted; empty means allow all.
   browser:
     enabled: false
     headless: true
-    default_timeout_ms: 1000
+    default_timeout_ms: 10000
     allowed_origins: []
     backend: "playwright"
   rest:
@@ -32,9 +32,9 @@ scheduler:
   max_concurrent_tasks: 1
   autonomous_task_interval_sec: 1800
   idle_sleep_seconds: 1.0
-# logging:
-#   level: "INFO"
-#   log_dir: "logs"
+logging:
+  level: "INFO"
+  log_dir: "logs"
 learning:
   feedback_path: "storage/analytics/feedback.json"
   max_feedback_history: 200
@@ -59,22 +59,6 @@ learning:
   learning_rate: 5.0e-05
   lora_rank: 8
   dpo_beta: 0.1
-security:
-  permission_enabled: true
-  default_permission_profile: "default"
-  consent_required: true
-  consent_timeout_seconds: 300
-  consent_storage_path: "storage/consent"
-  policy_enforcement_enabled: true
-  guardrails_enabled: true
-  guardrail_categories: ["system_damage", "privacy", "network", "resource"]
-  credential_storage_path: "storage/credentials"
-  credential_encryption_enabled: true
-  audit_logging_enabled: true
-  audit_storage_path: "storage/audit"
-  audit_retention_days: 90
-  risk_assessment_enabled: true
-  max_allowed_risk_level: "medium"
 logging:
   level: "INFO"
   log_dir: "logs"

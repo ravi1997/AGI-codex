@@ -21,6 +21,9 @@ setup(
         "psutil>=5.9",
         "requests>=2.31",
         "playwright>=1.40",
+        "aiohttp>=3.9.0",
+        "feedparser>=6.0",
+        "beautifulsoup4>=4.12.0",
     ],
     extras_require={
         "dev": ["pytest>=7.4"],
